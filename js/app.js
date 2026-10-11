@@ -58,6 +58,7 @@
     <nav class="nav-links" id="navLinks">
       <a href="index.html" class="${page === "home" ? "active" : ""}">Home</a>
       <a href="products.html" class="${page === "products" ? "active" : ""}">Products</a>
+      <a href="track.html" class="${page === "track" ? "active" : ""}">Track order</a>
       <a href="contact.html" class="${page === "contact" ? "active" : ""}">Contact</a>
     </nav>
     <button class="cart-btn" id="cartOpen" aria-label="Open cart">${icon.bag}<span class="lbl">Cart</span><span class="cart-count" id="cartCount">0</span></button>
@@ -72,7 +73,7 @@
       <div><h6>Shop</h6><ul>
         ${Object.keys(CATS).map(c => `<li><a href="products.html?cat=${encodeURIComponent(c)}">${c}</a></li>`).join("")}
       </ul></div>
-      <div><h6>Company</h6><ul><li><a href="index.html#how">How it works</a></li><li><a href="contact.html">Contact</a></li><li><a href="contact.html#faq">FAQ</a></li></ul></div>
+      <div><h6>Company</h6><ul><li><a href="index.html#how">How it works</a></li><li><a href="track.html">Track order</a></li><li><a href="contact.html">Contact</a></li><li><a href="contact.html#faq">FAQ</a></li></ul></div>
       <div><h6>Support</h6><ul><li><a href="mailto:${CFG.supportEmail}">${CFG.supportEmail}</a></li><li><a href="contact.html">Send a message</a></li></ul></div>
     </div>
     <div class="ruo"><b>⚠</b><div><b>For research use only.</b> All products sold by ChainLab Peptides are intended solely for in-vitro laboratory research by qualified professionals. Not for human or veterinary use, not for consumption, and not intended to diagnose, treat, cure or prevent any disease. These statements have not been evaluated by the FDA. Purchasers must be 21+.</div></div>
@@ -90,11 +91,20 @@
       <div class="row"><span>Subtotal</span><span id="subT">$0</span></div>
       <div class="row"><span>Shipping</span><span id="shipT">$0</span></div>
       <div class="row total"><span>Total</span><span id="totT">$0</span></div>
-      <form class="checkout-form" id="checkoutForm">
-        <input class="input" name="name" placeholder="Full name" required>
-        <input class="input" name="email" type="email" placeholder="Email" required>
-        <textarea class="input" name="address" placeholder="Shipping address" style="min-height:80px" required></textarea>
-        <label class="ack"><input type="checkbox" required> I confirm I am 21+ and purchasing for laboratory research use only, not for human consumption.</label>
+      <form class="checkout-form" id="checkoutForm" novalidate>
+        <div class="ck-h mono">Contact</div>
+        <input class="input" name="name" placeholder="Full name" autocomplete="name" required>
+        <input class="input" name="email" type="email" placeholder="Email" autocomplete="email" required>
+        <div class="ck-h mono">Ship to</div>
+        <input class="input" name="address1" placeholder="Street address" autocomplete="address-line1" required>
+        <input class="input" name="address2" placeholder="Apt, suite, unit (optional)" autocomplete="address-line2">
+        <input class="input" name="city" placeholder="City" autocomplete="address-level2" required>
+        <div class="ck-row">
+          <select class="input" name="state" autocomplete="address-level1" required><option value="">State</option><option>AL</option><option>AK</option><option>AZ</option><option>AR</option><option>CA</option><option>CO</option><option>CT</option><option>DE</option><option>DC</option><option>FL</option><option>GA</option><option>HI</option><option>ID</option><option>IL</option><option>IN</option><option>IA</option><option>KS</option><option>KY</option><option>LA</option><option>ME</option><option>MD</option><option>MA</option><option>MI</option><option>MN</option><option>MS</option><option>MO</option><option>MT</option><option>NE</option><option>NV</option><option>NH</option><option>NJ</option><option>NM</option><option>NY</option><option>NC</option><option>ND</option><option>OH</option><option>OK</option><option>OR</option><option>PA</option><option>RI</option><option>SC</option><option>SD</option><option>TN</option><option>TX</option><option>UT</option><option>VT</option><option>VA</option><option>WA</option><option>WV</option><option>WI</option><option>WY</option><option>PR</option></select>
+          <input class="input" name="zip" placeholder="ZIP" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{5}(-[0-9]{4})?" maxlength="10" required>
+        </div>
+        <label class="ack"><input type="checkbox" name="ack" required> I confirm I am 21+ and purchasing for laboratory research use only, not for human consumption.</label>
+        <div class="ck-err" id="ckErr"></div>
         <button class="btn btn-primary" type="submit" id="orderSubmit">Place order</button>
         <p class="ship-note">Next you'll pay in Bitcoin (works from Cash App). Orders ship once payment is confirmed.</p>
       </form>
@@ -150,12 +160,44 @@
     return { sub, ship, total: sub + ship };
   };
 
+  /* ---------- orders (synced with the back office when Supabase is configured) ---------- */
+  const DB = CFG.supabaseUrl && CFG.supabaseAnonKey ? CFG.supabaseUrl.replace(/\/$/, "") : "";
+  const dbHead = () => ({ apikey: CFG.supabaseAnonKey, "Content-Type": "application/json" });
+  const rpc = (fn, args) => fetch(`${DB}/rest/v1/rpc/${fn}`, { method: "POST", headers: dbHead(), body: JSON.stringify(args) }).then(r => { if (!r.ok) throw r; return r.status === 204 ? null : r.json(); });
+  const STATUS = {
+    awaiting:  { label: "Awaiting payment", cls: "st-amber", note: "Tap to see payment details." },
+    verifying: { label: "Verifying payment", cls: "st-amber", note: "We're confirming your payment." },
+    paid:      { label: "Paid · preparing", cls: "st-mint", note: "Payment confirmed — your order is being packed." },
+    shipped:   { label: "Shipped", cls: "st-mint", note: "Your order is on the way." },
+    cancelled: { label: "Cancelled", cls: "st-rose", note: "This order was cancelled. Contact us with questions." }
+  };
+  let orders = store.get("cl_orders", []);
+  { // migrate the old single pending order; drop finished orders after 14 days
+    const old = store.get("cl_pending", null);
+    if (old && old.at) orders.push({ ...old, status: old.claimed ? "verifying" : "awaiting" });
+    store.set("cl_pending", null);
+    orders = orders.filter(o => !(["shipped", "cancelled"].includes(o.status) && Date.now() - (o.at || 0) > 14 * 864e5) && !(o.local && Date.now() - o.at > 3 * 864e5));
+  }
+  const saveOrders = () => store.set("cl_orders", orders);
+  saveOrders();
+  async function refreshOrders() {
+    if (!DB) return;
+    await Promise.all(orders.filter(o => o.token && !["shipped", "cancelled"].includes(o.status)).map(async o => {
+      try { const r = await rpc("order_status", { p_id: o.id, p_token: o.token }); if (r && r[0]) { o.status = r[0].status; o.tracking = r[0].tracking; } } catch {}
+    }));
+    saveOrders();
+  }
+  const orderCards = () => orders.length ? `<div class="order-list"><div class="order-list-h"><span class="mono">Your orders</span></div>${orders.slice().reverse().map(o => {
+    const st = STATUS[o.status] || STATUS.awaiting;
+    return `<div class="pending-card ${st.cls}" data-order="${o.id}"><span class="status-pill"><i></i>${st.label}</span><b>Order ${o.id} · ${money(o.total)}</b><small>${o.status === "shipped" && o.tracking ? "Tracking: " + o.tracking : st.note}</small>${["shipped", "cancelled"].includes(o.status) ? `<span class="dismiss" data-dismiss="${o.id}" title="Remove">×</span>` : ""}</div>`;
+  }).join("")}</div>` : "";
+
   function render() {
     const n = cart.reduce((a, i) => a + i.qty, 0);
     $("#cartCount").textContent = n;
     const body = $("#cartBody");
     if (!cart.length) {
-      body.innerHTML = `<div class="cart-empty"><div style="display:flex;justify-content:center;opacity:.5;margin-bottom:16px">${vialSVG("#3a4150", "EMPTY", "—", "")}</div>Your cart is empty.<br><br><a class="btn btn-ghost" href="products.html">Browse products</a></div>`;
+      body.innerHTML = orderCards() + `<div class="cart-empty"><div style="display:flex;justify-content:center;opacity:.5;margin-bottom:16px">${vialSVG("#3a4150", "EMPTY", "—", "")}</div>Your cart is empty.<br><br><a class="btn btn-ghost" href="products.html">Browse products</a></div>`;
       $("#cartFoot").style.display = "none"; return;
     }
     $("#cartFoot").style.display = "";
@@ -165,7 +207,7 @@
         <div><h5>${p.name}</h5><div class="meta">${it.size} · ${it.mode === "kit" ? "10-VIAL KIT" : "SINGLE VIAL"}</div>
           <div style="display:flex;gap:12px;align-items:center;margin-top:6px"><div class="qty"><button data-q="${i}" data-d="-1">−</button><span>${it.qty}</span><button data-q="${i}" data-d="1">+</button></div><button class="rm" data-rm="${i}">Remove</button></div></div>
         <div class="lp">${money(priceOf(it) * it.qty)}</div></div>`;
-    }).join("");
+    }).join("") + orderCards();
     const t = totals();
     $("#subT").textContent = money(t.sub); $("#shipT").textContent = t.ship ? money(t.ship) : "Free"; $("#totT").textContent = money(t.total);
     if (CFG.freeShippingOver > 0) {
@@ -176,96 +218,130 @@
   }
   $("#cartBody").addEventListener("click", e => {
     const q = e.target.closest("[data-q]"), r = e.target.closest("[data-rm]");
-    if (q) { const it = cart[q.dataset.q]; it.qty += +q.dataset.d; if (it.qty < 1) cart.splice(q.dataset.q, 1); save(); }
-    if (r) { cart.splice(r.dataset.rm, 1); save(); }
+    const dm = e.target.closest("[data-dismiss]"), oc = e.target.closest("[data-order]");
+    if (q) { const it = cart[q.dataset.q]; it.qty += +q.dataset.d; if (it.qty < 1) cart.splice(q.dataset.q, 1); save(); return; }
+    if (r) { cart.splice(r.dataset.rm, 1); save(); return; }
+    if (dm) { orders = orders.filter(o => o.id !== dm.dataset.dismiss); saveOrders(); render(); return; }
+    if (oc && !e.target.closest(".pay-panel")) { const o = orders.find(x => x.id === oc.dataset.order); if (o) showPayment(o); }
   });
   const open = () => { $("#drawer").classList.add("open"); $("#scrim").classList.add("open"); };
-  const close = () => { $("#drawer").classList.remove("open"); $("#scrim").classList.remove("open"); };
+  const close = () => { $("#drawer").classList.remove("open"); $("#scrim").classList.remove("open"); clearInterval(poll); };
   window.openCart = open;
-  $("#cartOpen").onclick = () => (!cart.length && store.get("cl_pending", null)) ? showPendingOrder() : open(); $("#cartClose").onclick = close; $("#scrim").onclick = close;
+  $("#cartOpen").onclick = async () => { render(); open(); if (orders.length) { await refreshOrders(); if (!$(".pay-panel")) render(); } };
+  $("#cartClose").onclick = close; $("#scrim").onclick = close;
   document.addEventListener("keydown", e => e.key === "Escape" && close());
 
-  /* ---------- checkout (Bitcoin, confirmed by you) ---------- */
+  /* ---------- checkout (Bitcoin, confirmed by you in the back office) ---------- */
   const orderText = () => cart.map(i => `${i.qty} × ${byId[i.id].name} ${i.size} (${i.mode === "kit" ? "10-vial kit" : "single vial"}) — ${money(priceOf(i) * i.qty)}`).join("\n");
   const newOrderId = () => "CL-" + Date.now().toString(36).slice(-4).toUpperCase() + Math.floor(Math.random() * 90 + 10);
+  const newToken = () => (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
   const btcUri = o => `bitcoin:${CFG.btcAddress}` + (o.btc ? `?amount=${o.btc}&label=${encodeURIComponent("ChainLab " + o.id)}` : "");
   async function btcPrice() {
-    try {
-      const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd");
-      const j = await r.json(); return j.bitcoin.usd || 0;
-    } catch { return 0; }
+    try { const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"); const j = await r.json(); return j.bitcoin.usd || 0; }
+    catch { return 0; }
   }
   const copyBtn = (val, label) => `<button type="button" class="copy-row" data-copy="${val}"><span><small>${label}</small>${val}</span><i>Copy</i></button>`;
+  const notify = data => fetch(CFG.formEndpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(data) });
+  let poll;
   $("#toCheckout").onclick = () => {
     $("#checkoutForm").classList.add("show"); $("#toCheckout").style.display = "none";
     $("#cartBody").scrollTop = 1e6;
   };
 
   function showPayment(o) {
+    clearInterval(poll);
     $("#cartFoot").style.display = "none";
-    $("#cartBody").innerHTML = `<div class="pay-panel">
-      <span class="status-pill"><i></i>${o.claimed ? "Payment sent · verifying" : "Awaiting payment"}</span>
-      <h3>Order ${o.id}</h3>
-      <p class="muted">Send <b style="color:var(--text)">${money(o.total)}</b>${o.btc ? ` (≈ ${o.btc} BTC)` : ""} in Bitcoin to the address below.</p>
-      <div class="qr" id="payQR"></div>
-      <div class="copy-list">
-        ${copyBtn(CFG.btcAddress, "Bitcoin address")}
-        ${o.btc ? copyBtn(o.btc, "Amount (BTC)") : ""}
-        ${copyBtn(o.total.toFixed(2), "Amount (USD)")}
-      </div>
-      <details class="howto"><summary>Paying with Cash App?</summary>
-        <ol><li>Open Cash App → <b>Money</b> tab → <b>Bitcoin</b></li><li>Tap <b>Send</b> (paper-plane icon) → <b>Send to address</b></li><li>Enter <b>$${o.total.toFixed(2)}</b>, then scan this QR or paste the address</li><li>Confirm — then tap <b>"I've sent it"</b> below</li></ol>
-        <p>Any Bitcoin wallet works too (Coinbase, Strike, Exodus, etc.).</p>
-      </details>
-      ${o.claimed ? `<p class="muted" style="font-size:.85rem">Thanks! We'll confirm your payment and email ${o.email} when your order ships.</p>`
-        : `<input class="input" id="txid" placeholder="Transaction ID (optional)" style="font-size:.85rem">
-           <button class="btn btn-primary" id="paidBtn" style="width:100%">I've sent it</button>`}
-      <button class="btn btn-ghost" id="payDone" style="width:100%">${o.claimed ? "Done" : "Pay later"}</button>
-    </div>`;
-    const drawQR = () => new QRCode($("#payQR"), { text: btcUri(o), width: 196, height: 196, colorDark: "#06070a", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
-    if (window.QRCode) drawQR();
-    else { const q = document.createElement("script"); q.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"; q.onload = drawQR; document.head.appendChild(q); }
+    const st = STATUS[o.status] || STATUS.awaiting;
+    const done = ["paid", "shipped", "cancelled"].includes(o.status);
+    const back = `<button class="btn btn-ghost" id="payDone" style="width:100%">${done ? "Back to cart" : "Pay later — keep shopping"}</button>`;
+    if (done) {
+      $("#cartBody").innerHTML = `<div class="pay-panel">
+        <span class="status-pill ${st.cls}"><i></i>${st.label}</span><h3>Order ${o.id}</h3>
+        <div class="ring" style="width:72px;height:72px;border-radius:50%;display:grid;place-items:center;background:rgba(109,255,179,.12);color:var(--mint);font-size:1.8rem">${o.status === "cancelled" ? "×" : "✓"}</div>
+        <p class="muted">${st.note}</p>
+        ${o.status === "shipped" && o.tracking ? copyBtn(o.tracking, "Tracking number") : ""}
+        <a class="track-link" href="track.html?order=${o.id}">View order status →</a>
+        <p class="muted" style="font-size:.85rem">Questions? Email ${CFG.supportEmail}</p>${back}</div>`;
+    } else {
+      $("#cartBody").innerHTML = `<div class="pay-panel">
+        <span class="status-pill ${st.cls}"><i></i>${st.label}</span>
+        <h3>Order ${o.id}</h3>
+        <p class="muted">Send <b style="color:var(--text)">${money(o.total)}</b>${o.btc ? ` (≈ ${o.btc} BTC)` : ""} in Bitcoin to the address below.</p>
+        ${o.shipTo ? `<div class="shipto"><small>Ships to</small>${o.shipTo.replace(/\n/g, "<br>")}</div>` : ""}
+        <div class="qr" id="payQR"></div>
+        <div class="copy-list">${copyBtn(CFG.btcAddress, "Bitcoin address")}${o.btc ? copyBtn(o.btc, "Amount (BTC)") : ""}${copyBtn(o.total.toFixed(2), "Amount (USD)")}</div>
+        <details class="howto"><summary>Paying with Cash App?</summary>
+          <ol><li>Open Cash App → <b>Money</b> tab → <b>Bitcoin</b></li><li>Tap <b>Send</b> (paper-plane icon) → <b>Send to address</b></li><li>Enter <b>$${o.total.toFixed(2)}</b>, then scan this QR or paste the address</li><li>Confirm — then tap <b>"I've sent it"</b> below</li></ol>
+          <p>Any Bitcoin wallet works too (Coinbase, Strike, Exodus, etc.).</p></details>
+        ${o.status === "verifying" ? `<p class="muted" style="font-size:.85rem">Thanks! We're confirming your payment. This page updates automatically.</p>`
+          : `<input class="input" id="txid" placeholder="Transaction ID (optional)" style="font-size:.85rem"><button class="btn btn-primary" id="paidBtn" style="width:100%">I've sent it</button>`}
+        <a class="track-link" href="track.html?order=${o.id}">Track this order →</a>
+        ${back}</div>`;
+      const drawQR = () => new QRCode($("#payQR"), { text: btcUri(o), width: 196, height: 196, colorDark: "#06070a", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+      if (window.QRCode) drawQR();
+      else { const q = document.createElement("script"); q.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"; q.onload = drawQR; document.head.appendChild(q); }
+      const paid = $("#paidBtn");
+      if (paid) paid.onclick = async () => {
+        paid.disabled = true; paid.textContent = "Sending…";
+        const txid = $("#txid").value.trim();
+        try { if (DB && o.token) await rpc("mark_sent", { p_id: o.id, p_token: o.token, p_txid: txid }); } catch {}
+        try { await notify({ _subject: `PAID? ${o.id} — customer says Bitcoin sent (${money(o.total)})`, _template: "box", order_id: o.id, email: o.email, total_usd: money(o.total), total_btc: o.btc || "—", transaction_id: txid || "—", check: "Confirm in your wallet, then mark it Paid in the admin page." }); } catch {}
+        o.status = "verifying"; saveOrders(); showPayment(o);
+      };
+      // live status: when you mark it Paid in the back office, this screen updates on its own
+      if (DB && o.token) poll = setInterval(async () => {
+        if (!$(".pay-panel")) return clearInterval(poll);
+        const before = o.status; await refreshOrders();
+        if (o.status !== before) showPayment(o);
+      }, 20000);
+    }
     $$(".copy-row").forEach(b => b.onclick = () => { try { navigator.clipboard.writeText(b.dataset.copy); } catch {} b.querySelector("i").textContent = "Copied"; setTimeout(() => b.querySelector("i").textContent = "Copy", 1500); });
-    const paid = $("#paidBtn");
-    if (paid) paid.onclick = async () => {
-      paid.disabled = true; paid.textContent = "Sending…";
-      try {
-        await fetch(CFG.formEndpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ _subject: `PAID? ${o.id} — customer says Bitcoin sent (${money(o.total)})`, _template: "box", order_id: o.id, email: o.email, total_usd: money(o.total), total_btc: o.btc || "—", transaction_id: $("#txid").value || "—", check: "Confirm in your wallet that this amount arrived, then ship." }) });
-      } catch {}
-      o.claimed = true; store.set("cl_pending", o); showPayment(o);
-    };
-    $("#payDone").onclick = () => { if (o.claimed) store.set("cl_pending", null); close(); render(); };
+    $("#payDone").onclick = () => { clearInterval(poll); render(); };
   }
-  window.showPendingOrder = () => { const o = store.get("cl_pending", null); if (o) { showPayment(o); open(); } };
+  window.showOrder = id => { const o = orders.find(x => x.id === id); if (o) { showPayment(o); open(); } };
 
   async function sendOrder() {
-    const f = $("#checkoutForm"), fd = Object.fromEntries(new FormData(f)), t = totals(), id = newOrderId();
+    const f = $("#checkoutForm"), fd = Object.fromEntries(new FormData(f)), t = totals(), id = newOrderId(), token = newToken();
+    Object.keys(fd).forEach(k => typeof fd[k] === "string" && (fd[k] = fd[k].trim()));
+    fd.address = `${fd.name}\n${fd.address1}${fd.address2 ? ", " + fd.address2 : ""}\n${fd.city}, ${fd.state} ${fd.zip}`;
     const btn = $("#orderSubmit"); btn.disabled = true; btn.textContent = "Placing order…";
     const px = await btcPrice();
     const btc = px ? (t.total / px).toFixed(8) : "";
+    const items = cart.map(i => ({ name: byId[i.id].name, size: i.size, format: i.mode === "kit" ? "10-vial kit" : "single vial", qty: i.qty, price: priceOf(i) }));
     try {
-      const r = await fetch(CFG.formEndpoint, {
-        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          _subject: `New order ${id} — ${fd.name} — ${money(t.total)} (awaiting BTC)`, _template: "box",
-          _autoresponse: `Thanks ${fd.name}! Your ChainLab order ${id} is awaiting payment. Total: ${money(t.total)}${btc ? ` (≈ ${btc} BTC)` : ""}. Send Bitcoin to: ${CFG.btcAddress} — from Cash App: Money tab → Bitcoin → Send → Send to address, enter $${t.total.toFixed(2)}. We'll email you once payment is confirmed and your order ships.`,
-          order_id: id, status: "AWAITING BITCOIN PAYMENT",
-          name: fd.name, email: fd.email, shipping_address: fd.address,
-          order: orderText(), subtotal: money(t.sub), shipping: money(t.ship), total: money(t.total),
-          total_btc: btc || "—", btc_price_used: px ? money(px) : "—"
-        })
-      });
-      if (!r.ok) throw 0;
-      const o = { id, total: t.total, btc, email: fd.email };
-      store.set("cl_pending", o);
+      if (DB) {
+        const r = await fetch(`${DB}/rest/v1/orders`, { method: "POST", headers: { ...dbHead(), Prefer: "return=minimal" },
+          body: JSON.stringify({ id, token, name: fd.name, email: fd.email, address1: fd.address1, address2: fd.address2 || null, city: fd.city, state: fd.state, zip: fd.zip, address: fd.address, items, item_text: orderText(), subtotal: t.sub, shipping: t.ship, total: t.total, btc: btc || null }) });
+        if (!r.ok) throw new Error("db");
+      }
+      const r2 = await notify({
+        _subject: `New order ${id} — ${fd.name} — ${money(t.total)} (awaiting BTC)`, _template: "box",
+        _autoresponse: `Thanks ${fd.name}! Your ChainLab order ${id} is awaiting payment. Total: ${money(t.total)}${btc ? ` (≈ ${btc} BTC)` : ""}. Send Bitcoin to: ${CFG.btcAddress} — from Cash App: Money tab → Bitcoin → Send → Send to address, enter $${t.total.toFixed(2)}. We'll email you once payment is confirmed and your order ships. Check your order status anytime: ${location.origin}/track.html?order=${id}`,
+        order_id: id, status: "AWAITING BITCOIN PAYMENT", name: fd.name, email: fd.email, shipping_address: fd.address,
+        order: orderText(), subtotal: money(t.sub), shipping: money(t.ship), total: money(t.total), total_btc: btc || "—", btc_price_used: px ? money(px) : "—"
+      }).catch(() => null);
+      if (!DB && !(r2 && r2.ok)) throw new Error("email");
+      const o = { id, token: DB ? token : null, local: !DB, total: t.total, btc, email: fd.email, shipTo: fd.address, at: Date.now(), status: "awaiting" };
+      orders.push(o); saveOrders();
       cart = []; store.set("cl_cart", cart); $("#cartCount").textContent = 0;
       f.reset(); f.classList.remove("show"); $("#toCheckout").style.display = "";
       showPayment(o);
     } catch { toast("Couldn't place order — please email " + CFG.supportEmail); }
     btn.disabled = false; btn.textContent = "Place order";
   }
-  $("#checkoutForm").addEventListener("submit", e => { e.preventDefault(); sendOrder(); });
+  function validCheckout() {
+    const f = $("#checkoutForm"); let bad = null;
+    f.querySelectorAll("[required]").forEach(el => {
+      const ok = el.type === "checkbox" ? el.checked : el.checkValidity() && el.value.trim() !== "";
+      el.classList.toggle("bad", !ok); if (!ok && !bad) bad = el;
+    });
+    const msg = !bad ? "" : bad.name === "zip" ? "Enter a valid 5-digit ZIP code." : bad.name === "email" ? "Enter a valid email address." : bad.name === "ack" ? "Please confirm the research-use statement." : "Please fill in all shipping details.";
+    $("#ckErr").textContent = msg;
+    if (bad) bad.focus();
+    return !bad;
+  }
+  $("#checkoutForm").addEventListener("input", e => e.target.classList.remove("bad"));
+  $("#checkoutForm").addEventListener("submit", e => { e.preventDefault(); if (validCheckout()) sendOrder(); });
   render();
 
   /* ---------- effects ---------- */
