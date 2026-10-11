@@ -96,7 +96,7 @@
         <input class="input" name="name" placeholder="Full name" autocomplete="name" required>
         <input class="input" name="email" type="email" placeholder="Email" autocomplete="email" required>
         <div class="ck-h mono">Ship to</div>
-        <input class="input" name="address1" placeholder="Street address" autocomplete="address-line1" required>
+        <div class="ac-wrap"><input class="input" name="address1" placeholder="Start typing your street address" autocomplete="address-line1" required><div class="ac-list" id="acList" role="listbox" hidden></div></div>
         <input class="input" name="address2" placeholder="Apt, suite, unit (optional)" autocomplete="address-line2">
         <input class="input" name="city" placeholder="City" autocomplete="address-level2" required>
         <div class="ck-row">
@@ -316,16 +316,75 @@
       cart = []; store.set("cl_cart", cart); $("#cartCount").textContent = 0;
       f.reset(); f.classList.remove("show"); $("#toCheckout").style.display = "";
       showPayment(o);
-    } catch { toast("Couldn't place order — please email " + CFG.supportEmail); }
+    } catch (err) {
+      $("#ckErr").textContent = err && err.message === "not configured" ? "Checkout isn't available right now — please email " + CFG.supportEmail : "We couldn't place your order. Double-check your shipping details and try again.";
+    }
     btn.disabled = false; btn.textContent = "Place order";
   }
+  /* ---------- address autocomplete (Google Places API New; only if a key is set) ---------- */
+  if (CFG.googleMapsKey) (function () {
+    const f = $("#checkoutForm"), inp = f.address1, list = $("#acList");
+    inp.setAttribute("autocomplete", "off");
+    let sess = newToken(), timer, items = [], active = -1, seq = 0;
+    const G = "https://places.googleapis.com/v1/";
+    const hdr = fields => ({ "Content-Type": "application/json", "X-Goog-Api-Key": CFG.googleMapsKey, ...(fields ? { "X-Goog-FieldMask": fields } : {}) });
+    const hide = () => { list.hidden = true; active = -1; };
+    const paint = () => {
+      list.innerHTML = items.map((p, i) => `<div class="ac-item ${i === active ? "on" : ""}" role="option" data-i="${i}"><b>${p.main}</b><span>${p.sec}</span></div>`).join("") + `<div class="ac-foot">powered by Google</div>`;
+      list.hidden = !items.length;
+    };
+    async function suggest(q) {
+      const my = ++seq;
+      try {
+        const r = await fetch(G + "places:autocomplete", { method: "POST", headers: hdr(), body: JSON.stringify({ input: q, sessionToken: sess, includedRegionCodes: ["us"], languageCode: "en" }) });
+        const j = await r.json(); if (my !== seq) return;
+        items = (j.suggestions || []).filter(x => x.placePrediction).slice(0, 5).map(x => {
+          const pp = x.placePrediction, sf = pp.structuredFormat || {};
+          return { id: pp.placeId, main: (sf.mainText && sf.mainText.text) || pp.text.text, sec: (sf.secondaryText && sf.secondaryText.text) || "" };
+        });
+        active = -1; paint();
+      } catch { hide(); }
+    }
+    async function pick(i) {
+      const p = items[i]; if (!p) return; hide();
+      try {
+        const r = await fetch(`${G}places/${encodeURIComponent(p.id)}?sessionToken=${encodeURIComponent(sess)}`, { headers: hdr("addressComponents") });
+        const j = await r.json(); sess = newToken();
+        const c = t => (j.addressComponents || []).find(a => a.types.includes(t));
+        const num = c("street_number"), route = c("route"), sub = c("subpremise");
+        const city = c("locality") || c("postal_town") || c("sublocality_level_1") || c("sublocality") || c("administrative_area_level_3") || c("neighborhood");
+        const st = c("administrative_area_level_1"), zip = c("postal_code");
+        f.address1.value = [num && num.longText, route && route.shortText].filter(Boolean).join(" ") || p.main;
+        if (sub) f.address2.value = sub.longText;
+        if (city) f.city.value = city.longText;
+        if (st && [...f.state.options].some(o => o.value === st.shortText)) f.state.value = st.shortText;
+        if (zip) f.zip.value = zip.longText;
+        ["address1", "city", "state", "zip"].forEach(n => f[n].classList.remove("bad")); $("#ckErr").textContent = "";
+        (num ? f.address2 : f.address1).focus();
+      } catch { f.address1.value = p.main; }
+    }
+    inp.addEventListener("input", () => { clearTimeout(timer); const q = inp.value.trim(); if (q.length < 4) return hide(); timer = setTimeout(() => suggest(q), 250); });
+    inp.addEventListener("keydown", e => {
+      if (list.hidden) return;
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); active = (active + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length; paint(); }
+      else if (e.key === "Enter" && active > -1) { e.preventDefault(); pick(active); }
+      else if (e.key === "Escape") hide();
+    });
+    list.addEventListener("mousedown", e => { const it = e.target.closest("[data-i]"); if (it) { e.preventDefault(); pick(+it.dataset.i); } });
+    inp.addEventListener("blur", () => setTimeout(hide, 150));
+  })();
+
   function validCheckout() {
     const f = $("#checkoutForm"); let bad = null;
     f.querySelectorAll("[required]").forEach(el => {
-      const ok = el.type === "checkbox" ? el.checked : el.checkValidity() && el.value.trim() !== "";
+      const v = (el.value || "").trim();
+      const ok = el.type === "checkbox" ? el.checked
+        : el.name === "address1" ? v.length >= 3 && /\d/.test(v) && /[a-z]/i.test(v)
+        : el.name === "name" || el.name === "city" ? v.length >= 2
+        : el.checkValidity() && v !== "";
       el.classList.toggle("bad", !ok); if (!ok && !bad) bad = el;
     });
-    const msg = !bad ? "" : bad.name === "zip" ? "Enter a valid 5-digit ZIP code." : bad.name === "email" ? "Enter a valid email address." : bad.name === "ack" ? "Please confirm the research-use statement." : "Please fill in all shipping details.";
+    const msg = !bad ? "" : bad.name === "zip" ? "Enter a valid 5-digit ZIP code." : bad.name === "email" ? "Enter a valid email address." : bad.name === "ack" ? "Please confirm the research-use statement." : bad.name === "address1" ? "Enter your full street address (number and street name)." : bad.name === "city" ? "Enter your city." : "Please fill in all shipping details.";
     $("#ckErr").textContent = msg;
     if (bad) bad.focus();
     return !bad;
