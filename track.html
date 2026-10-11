@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Track Order — ChainLab Peptides</title>
+<meta name="description" content="Check the status of your ChainLab Peptides order.">
+<meta name="theme-color" content="#06070a">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .trk{display:grid;grid-template-columns:1fr 1.3fr;gap:24px;padding-bottom:120px;align-items:start}
+  .recent{display:flex;flex-wrap:wrap;gap:8px}
+  .result{min-height:320px}
+  .tl{display:grid;gap:0;margin:26px 0 8px}
+  .tl-step{display:grid;grid-template-columns:34px 1fr;gap:14px;position:relative;padding-bottom:22px}
+  .tl-step:last-child{padding-bottom:0}
+  .tl-step::before{content:"";position:absolute;left:16px;top:30px;bottom:-2px;width:2px;background:var(--line2)}
+  .tl-step:last-child::before{display:none}
+  .tl-step.done::before{background:var(--mint)}
+  .dot{width:34px;height:34px;border-radius:50%;border:2px solid var(--line2);display:grid;place-items:center;background:var(--bg2);color:var(--dim);font-size:.85rem;position:relative;z-index:1}
+  .tl-step.done .dot{border-color:var(--mint);background:var(--mint);color:#04120a}
+  .tl-step.now .dot{border-color:var(--mint);color:var(--mint);box-shadow:0 0 0 6px rgba(109,255,179,.12)}
+  .tl-step h4{font-family:var(--fd);font-size:1.05rem;margin-top:5px}
+  .tl-step p{color:var(--muted);font-size:.86rem}
+  .tl-step:not(.done):not(.now) h4{color:var(--dim)}
+  .res-head{display:flex;justify-content:space-between;align-items:start;gap:14px;flex-wrap:wrap}
+  .res-head h2{font-family:var(--fd);font-size:2rem;letter-spacing:-.03em;line-height:1}
+  .meta-row{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px;color:var(--muted);font-size:.86rem}
+  .meta-row b{color:var(--text);font-weight:600}
+  .trk-box{margin-top:18px;padding:16px;border-radius:14px;border:1px solid rgba(109,255,179,.3);background:rgba(109,255,179,.05)}
+  .trk-box code{font-family:var(--fm);font-size:1rem;word-break:break-all}
+  .carriers{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .carriers a{padding:8px 14px;border-radius:999px;border:1px solid var(--line2);font-size:.82rem}
+  .carriers a:hover{border-color:var(--mint);color:var(--mint)}
+  .cancel-box{margin-top:22px;padding:16px;border-radius:14px;border:1px solid rgba(255,122,156,.3);background:rgba(255,122,156,.05);color:#f3c2cf}
+  .items-pre{white-space:pre-line;font-size:.86rem;color:var(--muted);margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+  .placeholder{display:grid;place-items:center;text-align:center;color:var(--muted);min-height:320px}
+  @media (max-width:900px){.trk{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-page="track">
+<main>
+  <section class="page-head"><div class="wrap">
+    <span class="mono eyebrow">Order status</span>
+    <h1>Track your<br><span class="grad-text">order.</span></h1>
+    <p>Enter the order number from your confirmation email (it starts with <span class="mono" style="font-size:.85rem">CL-</span>) and the email you ordered with.</p>
+  </div></section>
+
+  <div class="wrap trk">
+    <form class="form-card" id="trackForm">
+      <div class="field"><label for="oid">Order number</label><input class="input" id="oid" name="id" placeholder="CL-XXXX00" autocomplete="off" required style="font-family:var(--fm);text-transform:uppercase"></div>
+      <div class="field"><label for="oem">Email</label><input class="input" id="oem" name="email" type="email" placeholder="you@example.com" autocomplete="email" required></div>
+      <button class="btn btn-primary" type="submit" id="trkBtn">Check status</button>
+      <div class="form-status err" id="trkErr"></div>
+      <div id="recentWrap" hidden><div class="mono muted" style="font-size:.66rem;margin:6px 0 8px">Orders on this device</div><div class="recent" id="recent"></div></div>
+    </form>
+
+    <div class="form-card result" id="result">
+      <div class="placeholder"><div><div style="font-size:2.4rem;margin-bottom:10px">📦</div>Your order status will show here.</div></div>
+    </div>
+  </div>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/app.js"></script>
+<script>
+(function () {
+  const CFG = window.CL_CONFIG, $ = s => document.querySelector(s);
+  const DB = (CFG.supabaseUrl || "").replace(/\/$/, "");
+  const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const money = n => "$" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  const day = d => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+  const local = (() => { try { return JSON.parse(localStorage.getItem("cl_orders")) || []; } catch { return []; } })();
+
+  // prefill from link (?order=CL-XXX) and from orders placed on this device
+  const qs = new URLSearchParams(location.search);
+  if (qs.get("order")) $("#oid").value = qs.get("order");
+  const match = local.find(o => o.id === $("#oid").value);
+  if (match && match.email) $("#oem").value = match.email;
+  if (local.length) {
+    $("#recentWrap").hidden = false;
+    $("#recent").innerHTML = local.slice().reverse().slice(0, 6).map(o => `<button type="button" class="chip" data-id="${esc(o.id)}" data-email="${esc(o.email || "")}">${esc(o.id)}</button>`).join("");
+    $("#recent").addEventListener("click", e => { const b = e.target.closest("[data-id]"); if (!b) return; $("#oid").value = b.dataset.id; $("#oem").value = b.dataset.email; lookup(); });
+  }
+
+  const STEPS = [
+    ["placed",    "Order placed",       "We received your order."],
+    ["verifying", "Payment sent",       "We're confirming your Bitcoin payment."],
+    ["paid",      "Payment confirmed",  "Your order is being packed."],
+    ["shipped",   "Shipped",            "Your order is on the way."]
+  ];
+  const RANK = { awaiting: 0, verifying: 1, paid: 2, shipped: 3 };
+
+  function render(o) {
+    const r = RANK[o.status] ?? 0, cancelled = o.status === "cancelled";
+    const headline = cancelled ? "Cancelled" : ["Awaiting payment", "Verifying payment", "Preparing to ship", "Shipped"][r];
+    const pillCls = cancelled ? "st-rose" : r >= 2 ? "st-mint" : "";
+    const tl = cancelled ? "" : `<div class="tl">${STEPS.map(([k, t, d], i) => {
+      const cls = i < r || (i === r && r === 3) ? "done" : i === r ? "now" : "";
+      const desc = i === 0 ? `${d} ${day(o.created_at)}` : i === 1 && r === 0 ? "Waiting for your Bitcoin payment." : d;
+      return `<div class="tl-step ${cls}"><div class="dot">${cls === "done" ? "✓" : i + 1}</div><div><h4>${t}</h4><p>${desc}</p></div></div>`;
+    }).join("")}</div>`;
+    const tn = (o.tracking || "").replace(/\s+/g, "");
+    const trackBox = o.status === "shipped" ? (o.tracking ? `<div class="trk-box"><div class="mono muted" style="font-size:.66rem;margin-bottom:6px">Tracking number</div><code>${esc(o.tracking)}</code>
+      <div class="carriers">
+        <a href="https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(tn)}" target="_blank" rel="noopener">USPS ↗</a>
+        <a href="https://www.ups.com/track?tracknum=${encodeURIComponent(tn)}" target="_blank" rel="noopener">UPS ↗</a>
+        <a href="https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(tn)}" target="_blank" rel="noopener">FedEx ↗</a>
+      </div></div>` : `<div class="trk-box">Your order has shipped. Tracking details will be emailed to you.</div>`) : "";
+    const payNote = o.status === "awaiting" && local.some(x => x.id === o.id)
+      ? `<p style="margin-top:16px"><button class="btn btn-ghost" onclick="showOrder('${esc(o.id)}')">Show payment details</button></p>` : "";
+    $("#result").innerHTML = `
+      <div class="res-head"><div><span class="mono muted" style="font-size:.7rem">Order</span><h2>${esc(o.id)}</h2></div>
+        <span class="status-pill ${pillCls}"><i></i>${headline}</span></div>
+      <div class="meta-row"><span>Placed <b>${day(o.created_at)}</b></span><span>Total <b>${money(o.total)}</b></span>${o.updated_at ? `<span>Updated <b>${day(o.updated_at)}</b></span>` : ""}</div>
+      ${cancelled ? `<div class="cancel-box">This order was cancelled. If you think this is a mistake, email <a href="mailto:${esc(CFG.supportEmail)}" style="text-decoration:underline">${esc(CFG.supportEmail)}</a> with your order number.</div>` : ""}
+      ${tl}${trackBox}${payNote}
+      ${o.item_text ? `<div class="items-pre">${esc(o.item_text)}</div>` : ""}`;
+    // keep the cart's order card in sync
+    try { const all = JSON.parse(localStorage.getItem("cl_orders")) || []; const m = all.find(x => x.id === o.id); if (m) { m.status = o.status; m.tracking = o.tracking; localStorage.setItem("cl_orders", JSON.stringify(all)); } } catch {}
+  }
+
+  async function lookup() {
+    const id = $("#oid").value.trim().toUpperCase(), email = $("#oem").value.trim();
+    $("#trkErr").textContent = "";
+    if (!id || !email) { $("#trkErr").textContent = "Enter your order number and email."; return; }
+    if (!DB) { $("#trkErr").textContent = `Order tracking isn't available right now — email ${CFG.supportEmail} with your order number.`; return; }
+    const btn = $("#trkBtn"); btn.disabled = true; btn.textContent = "Checking…";
+    try {
+      const r = await fetch(`${DB}/rest/v1/rpc/order_lookup`, { method: "POST", headers: { apikey: CFG.supabaseAnonKey, "Content-Type": "application/json" }, body: JSON.stringify({ p_id: id, p_email: email }) });
+      if (!r.ok) throw 0;
+      const rows = await r.json();
+      if (!rows.length) { $("#trkErr").textContent = "No order found with that number and email. Check your confirmation email and try again."; }
+      else { render(rows[0]); history.replaceState(null, "", "?order=" + encodeURIComponent(id)); }
+    } catch { $("#trkErr").textContent = "Couldn't check right now. Please try again in a minute."; }
+    btn.disabled = false; btn.textContent = "Check status";
+  }
+  $("#trackForm").addEventListener("submit", e => { e.preventDefault(); lookup(); });
+  if ($("#oid").value && $("#oem").value) lookup();
+})();
+</script>
+</body>
+</html>

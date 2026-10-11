@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Orders — ChainLab Back Office</title>
+<meta name="theme-color" content="#06070a">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  body{min-height:100vh}
+  [hidden]{display:none!important}
+  .a-top{position:sticky;top:0;z-index:20;background:rgba(6,7,10,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+  .a-top .wrap{display:flex;align-items:center;gap:16px;height:68px}
+  .a-top .who{margin-left:auto;color:var(--muted);font-size:.85rem;display:flex;gap:12px;align-items:center}
+  .a-btn{padding:8px 14px;border-radius:999px;border:1px solid var(--line2);background:var(--panel);cursor:pointer;font-size:.85rem;color:var(--text);transition:.2s;white-space:nowrap}
+  .a-btn:hover{border-color:var(--text)}
+  .a-btn.mint{background:var(--mint);color:#04120a;border-color:var(--mint);font-weight:600}
+  .a-btn.violet{background:var(--violet);color:#fff;border-color:var(--violet);font-weight:600}
+  .a-btn.rose{color:var(--rose);border-color:rgba(255,122,156,.35)}
+  .a-btn[disabled]{opacity:.5;pointer-events:none}
+  .login{min-height:calc(100vh - 68px);display:grid;place-items:center;padding:20px}
+  .login .form-card{width:min(420px,100%)}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:28px 0 18px}
+  .kpi{padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:var(--panel);cursor:pointer;transition:border-color .2s}
+  .kpi:hover,.kpi.on{border-color:var(--c)}
+  .kpi strong{font-family:var(--fd);font-size:1.8rem;display:block;line-height:1;color:var(--c)}
+  .kpi span{font-size:.8rem;color:var(--muted)}
+  .a-tools{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+  .a-tools .search{height:44px;max-width:420px}
+  .olist{display:grid;gap:10px;padding-bottom:80px}
+  .orow{border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden}
+  .orow-h{display:grid;grid-template-columns:150px 1.2fr 1fr 110px 150px 24px;gap:14px;align-items:center;padding:14px 18px;cursor:pointer}
+  .orow-h:hover{background:var(--panel2)}
+  .oid{font-family:var(--fm);font-size:.85rem}
+  .oid small,.ocust small{display:block;color:var(--muted);font-family:var(--fb);font-size:.75rem}
+  .ocust b{font-weight:600}
+  .ototal{font-family:var(--fd);font-weight:700;font-size:1.15rem;text-align:right}
+  .chev{color:var(--dim);transition:transform .25s}
+  .orow.open .chev{transform:rotate(90deg)}
+  .obody{display:none;border-top:1px solid var(--line);padding:18px;gap:18px;grid-template-columns:1.3fr 1fr}
+  .orow.open .obody{display:grid}
+  .box{border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .box h6{font-family:var(--fm);font-size:.66rem;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+  .items{width:100%;border-collapse:collapse;font-size:.88rem}
+  .items td{padding:7px 0;border-bottom:1px solid var(--line)}
+  .items td:last-child{text-align:right;font-family:var(--fm)}
+  .items tr.sum td{border:0;color:var(--muted);padding:4px 0}
+  .items tr.tot td{border:0;font-weight:700;color:var(--text);font-size:1rem}
+  .label{white-space:pre-line;font-size:.95rem;line-height:1.55}
+  .kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:.85rem}
+  .kv span{color:var(--muted)}
+  .kv code{font-family:var(--fm);font-size:.78rem;word-break:break-all}
+  .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .stp{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;font-family:var(--fm);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;border:1px solid;white-space:nowrap}
+  .stp i{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .s-awaiting{color:var(--muted);border-color:var(--line2)}
+  .s-verifying{color:var(--amber);border-color:rgba(255,196,107,.4);background:rgba(255,196,107,.07)}
+  .s-paid{color:var(--cyan);border-color:rgba(76,215,255,.4);background:rgba(76,215,255,.07)}
+  .s-shipped{color:var(--mint);border-color:rgba(109,255,179,.4);background:rgba(109,255,179,.07)}
+  .s-cancelled{color:var(--rose);border-color:rgba(255,122,156,.4);background:rgba(255,122,156,.06)}
+  .a-empty{padding:60px;text-align:center;color:var(--muted);border:1px dashed var(--line2);border-radius:16px}
+  .note-in{width:100%;margin-top:6px;font-size:.85rem;padding:10px 12px}
+  .ship-in{display:flex;gap:8px;margin-top:10px}
+  .ship-in .input{padding:10px 12px;font-size:.85rem}
+  @media (max-width:900px){
+    .kpis{grid-template-columns:repeat(3,1fr)}
+    .orow-h{grid-template-columns:1fr auto;grid-template-areas:"id total" "cust st"}
+    .orow-h .oid{grid-area:id}.orow-h .ototal{grid-area:total}.orow-h .ocust{grid-area:cust}.orow-h .ost{grid-area:st;justify-self:end}
+    .orow-h .odate,.orow-h .chev{display:none}
+    .obody{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<header class="a-top"><div class="wrap">
+  <a href="index.html" class="logo"><svg viewBox="0 0 40 40" width="30" height="30"><path d="M8 28 L16 12 L24 26 L32 10" fill="none" stroke="#4cd7ff" stroke-width="2.4" stroke-linecap="round"/><circle cx="8" cy="28" r="4.2" fill="#6dffb3"/><circle cx="16" cy="12" r="4.2" fill="#4cd7ff"/><circle cx="24" cy="26" r="4.2" fill="#8a7dff"/><circle cx="32" cy="10" r="4.2" fill="#eef1f6"/></svg><div>ChainLab<small>BACK OFFICE</small></div></a>
+  <div class="who" id="who"></div>
+</div></header>
+
+<main class="wrap">
+  <section class="login" id="loginView" hidden>
+    <form class="form-card" id="loginForm">
+      <h2 style="font-family:var(--fd);font-size:1.8rem;letter-spacing:-.03em">Sign in</h2>
+      <p class="muted" style="font-size:.9rem">Admin access only.</p>
+      <div class="field"><label>Email</label><input class="input" name="email" type="email" autocomplete="username" required></div>
+      <div class="field"><label>Password</label><input class="input" name="password" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-primary" type="submit">Sign in</button>
+      <div class="form-status err" id="loginErr"></div>
+    </form>
+  </section>
+
+  <section id="appView" hidden>
+    <div class="kpis" id="kpis"></div>
+    <div class="a-tools">
+      <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" placeholder="Search order #, name, email, ZIP…"></label>
+      <button class="a-btn" id="refresh">↻ Refresh</button>
+      <a class="a-btn" id="walletLink" target="_blank" rel="noopener">Check wallet on mempool.space ↗</a>
+      <span class="muted" id="lastSync" style="font-size:.8rem"></span>
+    </div>
+    <div class="olist" id="list"></div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
