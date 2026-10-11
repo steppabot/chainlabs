@@ -11,6 +11,7 @@ window.CL_CONFIG = {
   // Paste these from Supabase → Project Settings → API (Project URL + anon/publishable key).
   supabaseUrl: "https://ppfsoeakpoxymqibcnfh.supabase.co",
   supabaseAnonKey: "sb_publishable_ObTDajjE4HCB6FOg3BcnAw_i4vml7W0",
+  googleMapsKey: "AIzaSyAWbPtp6TnIqgpI4iCm9GzXWHegpbuDFOc",
 
   // Shipping shown in the cart (USD). Set freeShippingOver to 0 to disable.
   shippingFlat: 15,
