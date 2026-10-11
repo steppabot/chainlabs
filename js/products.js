@@ -1,5 +1,5 @@
 // Generated product catalog. Prices in USD.
-// single = 1 vial, kit = 10 vials.
+// single = 1 vial, kit = 10 vials. Synced with supplier US stock 2026-10-11.
 window.CL_PRODUCTS = [
  {
   "id": "5-amino-1mq",
@@ -20,6 +20,18 @@ window.CL_PRODUCTS = [
     "size": "50mg",
     "single": 90,
     "kit": 270
+   }
+  ]
+ },
+ {
+  "id": "aod-9604",
+  "name": "AOD-9604",
+  "cat": "Metabolic",
+  "sizes": [
+   {
+    "size": "5mg",
+    "single": 110,
+    "kit": 330
    }
   ]
  },
@@ -97,6 +109,11 @@ window.CL_PRODUCTS = [
     "kit": 270
    },
    {
+    "size": "15mg",
+    "single": 130,
+    "kit": 390
+   },
+   {
     "size": "20mg",
     "single": 150,
     "kit": 450
@@ -108,8 +125,8 @@ window.CL_PRODUCTS = [
    },
    {
     "size": "40mg",
-    "single": 240,
-    "kit": 720
+    "single": 235,
+    "kit": 705
    },
    {
     "size": "60mg",
@@ -124,26 +141,14 @@ window.CL_PRODUCTS = [
   "cat": "Metabolic",
   "sizes": [
    {
-    "size": "5mg",
-    "single": 45,
-    "kit": 135
-   },
-   {
     "size": "15mg",
     "single": 75,
     "kit": 225
-   }
-  ]
- },
- {
-  "id": "slu-pp-332",
-  "name": "SLU-PP-332",
-  "cat": "Metabolic",
-  "sizes": [
+   },
    {
-    "size": "5mg",
-    "single": 110,
-    "kit": 330
+    "size": "20mg",
+    "single": 89,
+    "kit": 267
    }
   ]
  },
@@ -152,6 +157,11 @@ window.CL_PRODUCTS = [
   "name": "Tirzepatide",
   "cat": "Metabolic",
   "sizes": [
+   {
+    "size": "5mg",
+    "single": 55,
+    "kit": 165
+   },
    {
     "size": "10mg",
     "single": 70,
@@ -345,6 +355,11 @@ window.CL_PRODUCTS = [
   "cat": "GH Axis",
   "sizes": [
    {
+    "size": "5mg",
+    "single": 50,
+    "kit": 150
+   },
+   {
     "size": "10mg",
     "single": 65,
     "kit": 195
@@ -473,6 +488,18 @@ window.CL_PRODUCTS = [
   ]
  },
  {
+  "id": "glutathione",
+  "name": "Glutathione",
+  "cat": "Longevity",
+  "sizes": [
+   {
+    "size": "1500mg",
+    "single": 100,
+    "kit": 300
+   }
+  ]
+ },
+ {
   "id": "mots-c",
   "name": "MOTS-c",
   "cat": "Longevity",
@@ -512,6 +539,18 @@ window.CL_PRODUCTS = [
   ]
  },
  {
+  "id": "pinealon",
+  "name": "Pinealon",
+  "cat": "Longevity",
+  "sizes": [
+   {
+    "size": "10mg",
+    "single": 90,
+    "kit": 270
+   }
+  ]
+ },
+ {
   "id": "ss-31",
   "name": "SS-31",
   "cat": "Longevity",
@@ -537,6 +576,18 @@ window.CL_PRODUCTS = [
     "size": "10mg",
     "single": 80,
     "kit": 240
+   }
+  ]
+ },
+ {
+  "id": "thymosin-alpha-1",
+  "name": "Thymosin Alpha-1",
+  "cat": "Longevity",
+  "sizes": [
+   {
+    "size": "10mg",
+    "single": 190,
+    "kit": 570
    }
   ]
  },
@@ -634,6 +685,30 @@ window.CL_PRODUCTS = [
     "size": "5mg",
     "single": 95,
     "kit": 285
+   }
+  ]
+ },
+ {
+  "id": "gonadorelin-acetate",
+  "name": "Gonadorelin Acetate",
+  "cat": "Signaling",
+  "sizes": [
+   {
+    "size": "5mg",
+    "single": 105,
+    "kit": 315
+   }
+  ]
+ },
+ {
+  "id": "hcg",
+  "name": "HCG",
+  "cat": "Signaling",
+  "sizes": [
+   {
+    "size": "10000iu",
+    "single": 145,
+    "kit": 435
    }
   ]
  },
