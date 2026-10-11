@@ -270,9 +270,12 @@
         ${o.shipTo ? `<div class="shipto"><small>Ships to</small>${o.shipTo.replace(/\n/g, "<br>")}</div>` : ""}
         <div class="qr" id="payQR"></div>
         <div class="copy-list">${copyBtn(CFG.btcAddress, "Bitcoin address")}${o.btc ? copyBtn(o.btc, "Amount (BTC)") : ""}${copyBtn(o.total.toFixed(2), "Amount (USD)")}</div>
-        <details class="howto"><summary>Paying with Cash App?</summary>
-          <ol><li>Open Cash App → <b>Money</b> tab → <b>Bitcoin</b></li><li>Tap <b>Send</b> (paper-plane icon) → <b>Send to address</b></li><li>Enter <b>$${o.total.toFixed(2)}</b>, then scan this QR or paste the address</li><li>Confirm — then tap <b>"I've sent it"</b> below</li></ol>
-          <p>Any Bitcoin wallet works too (Coinbase, Strike, Exodus, etc.).</p></details>
+        <details class="howto" open><summary>Paying with Cash App?</summary>
+          <ol><li><b>Buy the Bitcoin first:</b> tap the <b>Money</b> tab → <b>Bitcoin</b> → <b>Buy</b> → buy <b>$${Math.ceil(o.total + 5)}</b> (covers the order plus Cash App's small network fee)</li>
+            <li>Back on the Bitcoin screen tap <b>Send</b> (paper-plane icon) → <b>Send to address</b></li>
+            <li>Scan this QR code or paste the address, enter <b>$${o.total.toFixed(2)}</b> and confirm</li>
+            <li>Tap <b>"I've sent it"</b> below</li></ol>
+          <p>You need Bitcoin in your balance before you can send it. Any other Bitcoin wallet (Coinbase, Strike, Exodus) works too.</p></details>
         ${o.status === "verifying" ? `<p class="muted" style="font-size:.85rem">Thanks! We're confirming your payment. This page updates automatically.</p>`
           : `<input class="input" id="txid" placeholder="Transaction ID (optional)" style="font-size:.85rem"><button class="btn btn-primary" id="paidBtn" style="width:100%">I've sent it</button>`}
         <p class="muted" style="font-size:.8rem">Save your order number <b style="color:var(--text)">${o.id}</b> — use it with your email on the <a class="track-link" href="track.html?order=${o.id}">Track order</a> page.</p>
