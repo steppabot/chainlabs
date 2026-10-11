@@ -79,7 +79,9 @@
   const search = document.getElementById("search"), chips = document.getElementById("chips"), sort = document.getElementById("sort");
   search.value = state.q;
 
-  const counts = { All: CL_PRODUCTS.length }; CL_PRODUCTS.forEach(p => counts[p.cat] = (counts[p.cat] || 0) + 1);
+  const showTest = params.has("test");
+  const LIST = CL_PRODUCTS.filter(p => !p.hidden || showTest);
+  const counts = { All: LIST.length }; LIST.forEach(p => counts[p.cat] = (counts[p.cat] || 0) + 1);
   chips.innerHTML = ["All", ...Object.keys(CL_CATS)].map(c => `<button class="chip" data-c="${c}">${c}<i>${counts[c] || 0}</i></button>`).join("");
 
   // mode switch
@@ -96,9 +98,9 @@
   function apply() {
     chips.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.dataset.c === state.cat));
     const q = state.q.toLowerCase().replace(/[\s-]/g, "");
-    let list = CL_PRODUCTS.filter(p => (state.cat === "All" || p.cat === state.cat) && (!q || p.name.toLowerCase().replace(/[\s-]/g, "").includes(q)));
+    let list = LIST.filter(p => (state.cat === "All" || p.cat === state.cat) && (!q || p.name.toLowerCase().replace(/[\s-]/g, "").includes(q)));
     const m = state.mode;
-    const pin = ["retatrutide", "tirzepatide", "semaglutide", "bpc-157", "bpc157-tb-500", "tb-500", "ghk-cu", "nad", "tesamorelin"];
+    const pin = ["test-order", "retatrutide", "tirzepatide", "semaglutide", "bpc-157", "bpc157-tb-500", "tb-500", "ghk-cu", "nad", "tesamorelin"];
     const rank = p => { const i = pin.indexOf(p.id); return i < 0 ? 99 : i; };
     if (state.sort === "featured") list = [...list].sort((a, b) => rank(a) - rank(b));
     if (state.sort === "low") list = [...list].sort((a, b) => a.sizes[0][m] - b.sizes[0][m]);
