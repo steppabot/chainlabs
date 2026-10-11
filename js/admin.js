@@ -40,14 +40,47 @@
   function logout() { sess = null; ls.set("cl_admin", null); show(); }
 
   /* ---------- data ---------- */
-  let orders = [], filter = "active", q = "", openIds = new Set();
+  let orders = [], msgs = [], filter = "active", q = "", openIds = new Set(), tab = "orders";
   async function load() {
     try {
-      orders = await api("orders?select=*&order=created_at.desc&limit=500");
+      [orders, msgs] = await Promise.all([api("orders?select=*&order=created_at.desc&limit=500"), api("messages?select=*&order=created_at.desc&limit=300")]);
+      drawMsgs();
       $("#lastSync").textContent = "Updated " + new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
       draw();
     } catch (e) { if (e.message !== "auth") toast("Couldn't load orders: " + e.message.slice(0, 80)); }
   }
+  function drawMsgs() {
+    const open = msgs.filter(m => !m.handled).length;
+    $("#tabM").textContent = open || "";
+    $("#msgList").innerHTML = msgs.length ? msgs.map(m => `<div class="msg ${m.handled ? "handled" : ""}" data-mid="${m.id}">
+      <div class="msg-h"><span class="stp ${m.handled ? "s-shipped" : "s-verifying"}"><i></i>${m.handled ? "Handled" : "New"}</span><b>${esc(m.name)}</b>
+        <a href="mailto:${esc(m.email)}" style="color:var(--cyan);font-size:.88rem">${esc(m.email)}</a>
+        <span class="muted" style="font-size:.85rem">${esc(m.topic)}${m.order_number ? " · " + esc(m.order_number) : ""}</span><span class="when">${when(m.created_at)}</span></div>
+      <p>${esc(m.message)}</p>
+      <div class="acts"><a class="a-btn mint" href="mailto:${esc(m.email)}?subject=${encodeURIComponent("Re: " + (m.topic || "your message") + " — ChainLab Peptides")}">✉ Reply</a>
+        ${m.order_number ? `<button class="a-btn" data-goorder="${esc(m.order_number)}">View order</button>` : ""}
+        <button class="a-btn" data-handled="${m.handled ? 0 : 1}">${m.handled ? "Mark as new" : "✓ Mark handled"}</button>
+        <button class="a-btn rose" data-del>Delete</button></div></div>`).join("") : `<div class="a-empty">No messages yet.</div>`;
+  }
+  async function msgUpdate(id, method, body) {
+    try { await api(`messages?id=eq.${id}`, { method, headers: { Prefer: "return=minimal" }, body: body ? JSON.stringify(body) : undefined }); }
+    catch (e) { if (e.message !== "auth") toast("Update failed"); return; }
+    if (method === "DELETE") msgs = msgs.filter(m => m.id !== id); else msgs.find(m => m.id === id).handled = body.handled;
+    drawMsgs();
+  }
+  $("#msgList").addEventListener("click", e => {
+    const el = e.target.closest(".msg"); if (!el) return; const id = +el.dataset.mid;
+    const h = e.target.closest("[data-handled]"), d = e.target.closest("[data-del]"), g = e.target.closest("[data-goorder]");
+    if (h) msgUpdate(id, "PATCH", { handled: h.dataset.handled === "1" });
+    if (d && confirm("Delete this message?")) msgUpdate(id, "DELETE");
+    if (g) { setTab("orders"); filter = "all"; q = g.dataset.goorder; $("#q").value = q; openIds.add(q.toUpperCase()); draw(); }
+  });
+  function setTab(t) {
+    tab = t; document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+    $("#orderView").hidden = t !== "orders"; $("#msgView").hidden = t !== "messages";
+  }
+  $("#tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (b) setTab(b.dataset.tab); });
+
   async function update(id, patch, msg) {
     try {
       const [row] = await api(`orders?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ ...patch, updated_at: new Date().toISOString() }) });
@@ -60,6 +93,9 @@
   function draw() {
     const counts = { active: 0 }; Object.keys(ST).forEach(k => counts[k] = 0);
     orders.forEach(o => { counts[o.status]++; if (["awaiting", "verifying", "paid"].includes(o.status)) counts.active++; });
+    $("#tabO").textContent = counts.verifying + counts.paid || "";
+    const unread = counts.verifying + counts.paid + msgs.filter(m => !m.handled).length;
+    document.title = (unread ? `(${unread}) ` : "") + "Orders — ChainLab Back Office";
     const tiles = [["active", "Needs action", "#eef1f6"], ["verifying", "Verifying", ST.verifying.c], ["paid", "Paid · to ship", ST.paid.c], ["shipped", "Shipped", ST.shipped.c], ["all", "All orders", "#8a7dff"]];
     $("#kpis").innerHTML = tiles.map(([k, l, c]) => `<div class="kpi ${filter === k ? "on" : ""}" data-f="${k}" style="--c:${c}"><strong>${k === "all" ? orders.length : counts[k]}</strong><span>${l}</span></div>`).join("");
     const ql = q.toLowerCase();
