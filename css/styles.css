@@ -320,3 +320,17 @@ footer ul a:hover{color:var(--text)}
   .mode-switch{order:-1}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}.hero h1 .line span{transform:none}.hero p.lead,.hero .ctas{opacity:1}}
+
+/* venmo payment panel */
+.pay-panel{display:grid;gap:14px;justify-items:center;text-align:center;padding:26px 4px;animation:fade .4s}
+.pay-panel h3{font-family:var(--fd);font-size:1.7rem;letter-spacing:-.03em}
+.pay-panel p{font-size:.92rem;max-width:340px}
+.status-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid rgba(255,196,107,.35);background:rgba(255,196,107,.08);color:var(--amber);font-family:var(--fm);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase}
+.status-pill i{width:7px;height:7px;border-radius:50%;background:var(--amber);animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.qr{padding:14px;background:#fff;border-radius:16px;box-shadow:0 0 0 6px rgba(109,255,179,.12)}
+.qr img,.qr canvas{display:block}
+.venmo-btn{width:100%}
+.pay-steps{display:grid;gap:8px;width:100%;text-align:left;font-size:.85rem;color:var(--muted)}
+.pay-steps div{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.pay-steps b{width:22px;height:22px;flex:none;border-radius:50%;background:rgba(109,255,179,.12);color:var(--mint);display:grid;place-items:center;font-size:.72rem}
