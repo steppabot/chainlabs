@@ -377,3 +377,12 @@ footer ul a:hover{color:var(--text)}
 .shipto{width:100%;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:12px;font-size:.85rem;line-height:1.5}
 .shipto small{display:block;color:var(--muted);font-size:.7rem;margin-bottom:2px}
 .track-link{color:var(--cyan);font-size:.88rem}.track-link:hover{text-decoration:underline}
+
+/* address autocomplete */
+.ac-wrap{position:relative}
+.ac-list{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.ac-item{padding:10px 14px;cursor:pointer;display:grid;gap:1px;border-bottom:1px solid var(--line)}
+.ac-item b{font-weight:600;font-size:.9rem}
+.ac-item span{color:var(--muted);font-size:.78rem}
+.ac-item:hover,.ac-item.on{background:rgba(109,255,179,.08)}
+.ac-foot{padding:6px 14px;text-align:right;font-size:.66rem;color:var(--dim)}
