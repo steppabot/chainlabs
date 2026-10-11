@@ -8,9 +8,9 @@ window.CL_CONFIG = {
   // click the link in it, then every form submission lands in your inbox.
   formEndpoint: "https://formsubmit.co/ajax/support@chainlabpeptides.com",
 
-  // Your Venmo username (no @). Checkout shows a QR code + button that opens
-  // Venmo with the exact order total and the order number as the note.
-  venmoUsername: "chainlab",
+  // Your Bitcoin receiving address (from your own wallet, e.g. BlueWallet/Exodus/Electrum).
+  // Checkout shows a QR code + copy buttons; buyers can pay from Cash App's Bitcoin tab.
+  btcAddress: "3Pq9JG7MPGbVvXn9TmRthejFZA25S4DRVD",
 
   // Shipping shown in the cart (USD). Set freeShippingOver to 0 to disable.
   shippingFlat: 15,
