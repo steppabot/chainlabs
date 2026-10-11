@@ -46,7 +46,7 @@
   <section class="page-head"><div class="wrap">
     <span class="mono eyebrow">Order status</span>
     <h1>Track your<br><span class="grad-text">order.</span></h1>
-    <p>Enter the order number from your confirmation email (it starts with <span class="mono" style="font-size:.85rem">CL-</span>) and the email you ordered with.</p>
+    <p>Enter your order number (in your order email — it starts with <span class="mono" style="font-size:.85rem">CL-</span>) and the email you ordered with. Orders placed on this device are listed below the form.</p>
   </div></section>
 
   <div class="wrap trk">
@@ -134,7 +134,7 @@
       const r = await fetch(`${DB}/rest/v1/rpc/order_lookup`, { method: "POST", headers: { apikey: CFG.supabaseAnonKey, "Content-Type": "application/json" }, body: JSON.stringify({ p_id: id, p_email: email }) });
       if (!r.ok) throw 0;
       const rows = await r.json();
-      if (!rows.length) { $("#trkErr").textContent = "No order found with that number and email. Check your confirmation email and try again."; }
+      if (!rows.length) { $("#trkErr").textContent = "No order found with that number and email. Check both and try again."; }
       else { render(rows[0]); history.replaceState(null, "", "?order=" + encodeURIComponent(id)); }
     } catch { $("#trkErr").textContent = "Couldn't check right now. Please try again in a minute."; }
     btn.disabled = false; btn.textContent = "Check status";
