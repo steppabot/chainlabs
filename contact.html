@@ -80,9 +80,11 @@
     if (data._honey) return;
     btn.disabled = true; btn.firstChild.textContent = "Sending… "; st.textContent = ""; st.className = "form-status";
     try {
-      const r = await fetch(CL_CONFIG.formEndpoint, {
-        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ _subject: `[ChainLab] ${topic} — ${data.name}`, _replyto: data.email, _template: "table", topic, name: data.name, email: data.email, order_number: data.order_number || "—", message: data.message })
+      const DB = (CL_CONFIG.supabaseUrl || "").replace(/\/$/, "");
+      if (!DB) throw 0;
+      const r = await fetch(`${DB}/rest/v1/messages`, {
+        method: "POST", headers: { apikey: CL_CONFIG.supabaseAnonKey, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify({ topic, name: data.name.trim(), email: data.email.trim(), order_number: (data.order_number || "").trim() || null, message: data.message.trim() })
       });
       if (!r.ok) throw 0;
       f.style.display = "none"; document.getElementById("success").classList.add("show");
