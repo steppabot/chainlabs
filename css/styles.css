@@ -208,7 +208,7 @@ section.block{padding:120px 0}
 /* drawer */
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:90;opacity:0;pointer-events:none;transition:opacity .3s}
 .scrim.open{opacity:1;pointer-events:auto}
-.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--bg2);border-left:1px solid var(--line);z-index:100;transform:translateX(100%);transition:transform .45s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+.drawer{position:fixed;top:0;right:0;height:100vh;height:100dvh;width:min(460px,100%);background:var(--bg2);border-left:1px solid var(--line);z-index:100;transform:translateX(100%);transition:transform .45s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
 .drawer.open{transform:none}
 .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;border-bottom:1px solid var(--line)}
 .drawer-head h3{font-family:var(--fd);font-size:1.4rem}
@@ -386,3 +386,14 @@ footer ul a:hover{color:var(--text)}
 .ac-item span{color:var(--muted);font-size:.78rem}
 .ac-item:hover,.ac-item.on{background:rgba(109,255,179,.08)}
 .ac-foot{padding:6px 14px;text-align:right;font-size:.66rem;color:var(--dim)}
+
+/* checkout: whole drawer scrolls so the button is always reachable (iOS Safari toolbar) */
+.drawer.checking{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.drawer.checking .drawer-body{flex:none;overflow:visible}
+.drawer.checking .drawer-foot{padding-bottom:calc(40px + env(safe-area-inset-bottom))}
+.drawer-head{position:sticky;top:0;background:var(--bg2);z-index:2}
+.drawer-body{overscroll-behavior:contain}
+/* keep autofilled fields dark instead of iOS yellow */
+.input:-webkit-autofill,.input:-webkit-autofill:hover,.input:-webkit-autofill:focus{-webkit-text-fill-color:var(--text);-webkit-box-shadow:0 0 0 1000px var(--panel) inset;caret-color:var(--text);transition:background-color 9999s}
+/* 16px inputs stop iOS from zooming in when a field is tapped */
+@media (max-width:720px){.checkout-form .input,.checkout-form select.input{font-size:16px}}
