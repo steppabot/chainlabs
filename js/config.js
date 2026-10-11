@@ -12,6 +12,11 @@ window.CL_CONFIG = {
   // Checkout shows a QR code + copy buttons; buyers can pay from Cash App's Bitcoin tab.
   btcAddress: "3Pq9JG7MPGbVvXn9TmRthejFZA25S4DRVD",
 
+  // Back office (orders database). Paste these from Supabase → Project Settings → API.
+  // Leave empty to run without the back office (orders then only arrive by email).
+  supabaseUrl: "",
+  supabaseAnonKey: "",
+
   // Shipping shown in the cart (USD). Set freeShippingOver to 0 to disable.
   shippingFlat: 15,
   freeShippingOver: 300
