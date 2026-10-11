@@ -241,7 +241,6 @@
     catch { return 0; }
   }
   const copyBtn = (val, label) => `<button type="button" class="copy-row" data-copy="${val}"><span><small>${label}</small>${val}</span><i>Copy</i></button>`;
-  const notify = data => fetch(CFG.formEndpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(data) });
   let poll;
   $("#toCheckout").onclick = () => {
     $("#checkoutForm").classList.add("show"); $("#toCheckout").style.display = "none";
@@ -275,7 +274,7 @@
           <p>Any Bitcoin wallet works too (Coinbase, Strike, Exodus, etc.).</p></details>
         ${o.status === "verifying" ? `<p class="muted" style="font-size:.85rem">Thanks! We're confirming your payment. This page updates automatically.</p>`
           : `<input class="input" id="txid" placeholder="Transaction ID (optional)" style="font-size:.85rem"><button class="btn btn-primary" id="paidBtn" style="width:100%">I've sent it</button>`}
-        <a class="track-link" href="track.html?order=${o.id}">Track this order →</a>
+        <p class="muted" style="font-size:.8rem">Save your order number <b style="color:var(--text)">${o.id}</b> — use it with your email on the <a class="track-link" href="track.html?order=${o.id}">Track order</a> page.</p>
         ${back}</div>`;
       const drawQR = () => new QRCode($("#payQR"), { text: btcUri(o), width: 196, height: 196, colorDark: "#06070a", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
       if (window.QRCode) drawQR();
@@ -285,7 +284,6 @@
         paid.disabled = true; paid.textContent = "Sending…";
         const txid = $("#txid").value.trim();
         try { if (DB && o.token) await rpc("mark_sent", { p_id: o.id, p_token: o.token, p_txid: txid }); } catch {}
-        try { await notify({ _subject: `PAID? ${o.id} — customer says Bitcoin sent (${money(o.total)})`, _template: "box", order_id: o.id, email: o.email, total_usd: money(o.total), total_btc: o.btc || "—", transaction_id: txid || "—", check: "Confirm in your wallet, then mark it Paid in the admin page." }); } catch {}
         o.status = "verifying"; saveOrders(); showPayment(o);
       };
       // live status: when you mark it Paid in the back office, this screen updates on its own
@@ -309,19 +307,11 @@
     const btc = px ? (t.total / px).toFixed(8) : "";
     const items = cart.map(i => ({ name: byId[i.id].name, size: i.size, format: i.mode === "kit" ? "10-vial kit" : "single vial", qty: i.qty, price: priceOf(i) }));
     try {
-      if (DB) {
-        const r = await fetch(`${DB}/rest/v1/orders`, { method: "POST", headers: { ...dbHead(), Prefer: "return=minimal" },
-          body: JSON.stringify({ id, token, name: fd.name, email: fd.email, address1: fd.address1, address2: fd.address2 || null, city: fd.city, state: fd.state, zip: fd.zip, address: fd.address, items, item_text: orderText(), subtotal: t.sub, shipping: t.ship, total: t.total, btc: btc || null }) });
-        if (!r.ok) throw new Error("db");
-      }
-      const r2 = await notify({
-        _subject: `New order ${id} — ${fd.name} — ${money(t.total)} (awaiting BTC)`, _template: "box",
-        _autoresponse: `Thanks ${fd.name}! Your ChainLab order ${id} is awaiting payment. Total: ${money(t.total)}${btc ? ` (≈ ${btc} BTC)` : ""}. Send Bitcoin to: ${CFG.btcAddress} — from Cash App: Money tab → Bitcoin → Send → Send to address, enter $${t.total.toFixed(2)}. We'll email you once payment is confirmed and your order ships. Check your order status anytime: ${location.origin}/track.html?order=${id}`,
-        order_id: id, status: "AWAITING BITCOIN PAYMENT", name: fd.name, email: fd.email, shipping_address: fd.address,
-        order: orderText(), subtotal: money(t.sub), shipping: money(t.ship), total: money(t.total), total_btc: btc || "—", btc_price_used: px ? money(px) : "—"
-      }).catch(() => null);
-      if (!DB && !(r2 && r2.ok)) throw new Error("email");
-      const o = { id, token: DB ? token : null, local: !DB, total: t.total, btc, email: fd.email, shipTo: fd.address, at: Date.now(), status: "awaiting" };
+      if (!DB) throw new Error("not configured");
+      const r = await fetch(`${DB}/rest/v1/orders`, { method: "POST", headers: { ...dbHead(), Prefer: "return=minimal" },
+        body: JSON.stringify({ id, token, name: fd.name, email: fd.email, address1: fd.address1, address2: fd.address2 || null, city: fd.city, state: fd.state, zip: fd.zip, address: fd.address, items, item_text: orderText(), subtotal: t.sub, shipping: t.ship, total: t.total, btc: btc || null }) });
+      if (!r.ok) throw new Error("db");
+      const o = { id, token, total: t.total, btc, email: fd.email, shipTo: fd.address, at: Date.now(), status: "awaiting" };
       orders.push(o); saveOrders();
       cart = []; store.set("cl_cart", cart); $("#cartCount").textContent = 0;
       f.reset(); f.classList.remove("show"); $("#toCheckout").style.display = "";
