@@ -96,7 +96,7 @@
         <textarea class="input" name="address" placeholder="Shipping address" style="min-height:80px" required></textarea>
         <label class="ack"><input type="checkbox" required> I confirm I am 21+ and purchasing for laboratory research use only, not for human consumption.</label>
         <button class="btn btn-primary" type="submit" id="orderSubmit">Place order</button>
-        <p class="ship-note">Next you'll get a Venmo request for your total. Orders ship once payment is confirmed.</p>
+        <p class="ship-note">Next you'll pay in Bitcoin (works from Cash App). Orders ship once payment is confirmed.</p>
       </form>
       <button class="btn btn-primary" id="toCheckout">Checkout</button>
     </div>
@@ -185,55 +185,79 @@
   $("#cartOpen").onclick = () => (!cart.length && store.get("cl_pending", null)) ? showPendingOrder() : open(); $("#cartClose").onclick = close; $("#scrim").onclick = close;
   document.addEventListener("keydown", e => e.key === "Escape" && close());
 
-  /* ---------- checkout (Venmo, manually confirmed) ---------- */
+  /* ---------- checkout (Bitcoin, confirmed by you) ---------- */
   const orderText = () => cart.map(i => `${i.qty} × ${byId[i.id].name} ${i.size} (${i.mode === "kit" ? "10-vial kit" : "single vial"}) — ${money(priceOf(i) * i.qty)}`).join("\n");
   const newOrderId = () => "CL-" + Date.now().toString(36).slice(-4).toUpperCase() + Math.floor(Math.random() * 90 + 10);
-  const venmoLink = (amt, note) => `https://venmo.com/${encodeURIComponent(CFG.venmoUsername)}?txn=pay&amount=${amt.toFixed(2)}&note=${encodeURIComponent(note)}`;
+  const btcUri = o => `bitcoin:${CFG.btcAddress}` + (o.btc ? `?amount=${o.btc}&label=${encodeURIComponent("ChainLab " + o.id)}` : "");
+  async function btcPrice() {
+    try {
+      const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd");
+      const j = await r.json(); return j.bitcoin.usd || 0;
+    } catch { return 0; }
+  }
+  const copyBtn = (val, label) => `<button type="button" class="copy-row" data-copy="${val}"><span><small>${label}</small>${val}</span><i>Copy</i></button>`;
   $("#toCheckout").onclick = () => {
     $("#checkoutForm").classList.add("show"); $("#toCheckout").style.display = "none";
     $("#cartBody").scrollTop = 1e6;
   };
 
   function showPayment(o) {
-    const link = venmoLink(o.total, o.id);
     $("#cartFoot").style.display = "none";
     $("#cartBody").innerHTML = `<div class="pay-panel">
-      <span class="status-pill"><i></i>Order under review</span>
+      <span class="status-pill"><i></i>${o.claimed ? "Payment sent · verifying" : "Awaiting payment"}</span>
       <h3>Order ${o.id}</h3>
-      <p class="muted">Send <b style="color:var(--text)">${money(o.total)}</b> on Venmo to <b style="color:var(--text)">@${CFG.venmoUsername}</b>. Keep the note as <b style="color:var(--text)">${o.id}</b> so we can match your payment.</p>
-      <div class="qr" id="venmoQR"></div>
-      <a class="btn btn-primary venmo-btn" href="${link}" target="_blank" rel="noopener">Open Venmo · ${money(o.total)}</a>
-      <div class="pay-steps">
-        <div><b>1</b>Scan the code or tap the button</div>
-        <div><b>2</b>Confirm ${money(o.total)} with note ${o.id}</div>
-        <div><b>3</b>We verify the payment and email ${o.email} when it ships</div>
+      <p class="muted">Send <b style="color:var(--text)">${money(o.total)}</b>${o.btc ? ` (≈ ${o.btc} BTC)` : ""} in Bitcoin to the address below.</p>
+      <div class="qr" id="payQR"></div>
+      <div class="copy-list">
+        ${copyBtn(CFG.btcAddress, "Bitcoin address")}
+        ${o.btc ? copyBtn(o.btc, "Amount (BTC)") : ""}
+        ${copyBtn(o.total.toFixed(2), "Amount (USD)")}
       </div>
-      <button class="btn btn-ghost" id="payDone" style="width:100%">Done</button>
+      <details class="howto"><summary>Paying with Cash App?</summary>
+        <ol><li>Open Cash App → <b>Money</b> tab → <b>Bitcoin</b></li><li>Tap <b>Send</b> (paper-plane icon) → <b>Send to address</b></li><li>Enter <b>$${o.total.toFixed(2)}</b>, then scan this QR or paste the address</li><li>Confirm — then tap <b>"I've sent it"</b> below</li></ol>
+        <p>Any Bitcoin wallet works too (Coinbase, Strike, Exodus, etc.).</p>
+      </details>
+      ${o.claimed ? `<p class="muted" style="font-size:.85rem">Thanks! We'll confirm your payment and email ${o.email} when your order ships.</p>`
+        : `<input class="input" id="txid" placeholder="Transaction ID (optional)" style="font-size:.85rem">
+           <button class="btn btn-primary" id="paidBtn" style="width:100%">I've sent it</button>`}
+      <button class="btn btn-ghost" id="payDone" style="width:100%">${o.claimed ? "Done" : "Pay later"}</button>
     </div>`;
-    const drawQR = () => new QRCode($("#venmoQR"), { text: link, width: 196, height: 196, colorDark: "#06070a", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+    const drawQR = () => new QRCode($("#payQR"), { text: btcUri(o), width: 196, height: 196, colorDark: "#06070a", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
     if (window.QRCode) drawQR();
     else { const q = document.createElement("script"); q.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"; q.onload = drawQR; document.head.appendChild(q); }
-    $("#payDone").onclick = () => { store.set("cl_pending", null); close(); render(); };
+    $$(".copy-row").forEach(b => b.onclick = () => { try { navigator.clipboard.writeText(b.dataset.copy); } catch {} b.querySelector("i").textContent = "Copied"; setTimeout(() => b.querySelector("i").textContent = "Copy", 1500); });
+    const paid = $("#paidBtn");
+    if (paid) paid.onclick = async () => {
+      paid.disabled = true; paid.textContent = "Sending…";
+      try {
+        await fetch(CFG.formEndpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ _subject: `PAID? ${o.id} — customer says Bitcoin sent (${money(o.total)})`, _template: "box", order_id: o.id, email: o.email, total_usd: money(o.total), total_btc: o.btc || "—", transaction_id: $("#txid").value || "—", check: "Confirm in your wallet that this amount arrived, then ship." }) });
+      } catch {}
+      o.claimed = true; store.set("cl_pending", o); showPayment(o);
+    };
+    $("#payDone").onclick = () => { if (o.claimed) store.set("cl_pending", null); close(); render(); };
   }
   window.showPendingOrder = () => { const o = store.get("cl_pending", null); if (o) { showPayment(o); open(); } };
 
   async function sendOrder() {
     const f = $("#checkoutForm"), fd = Object.fromEntries(new FormData(f)), t = totals(), id = newOrderId();
     const btn = $("#orderSubmit"); btn.disabled = true; btn.textContent = "Placing order…";
-    const link = venmoLink(t.total, id);
+    const px = await btcPrice();
+    const btc = px ? (t.total / px).toFixed(8) : "";
     try {
       const r = await fetch(CFG.formEndpoint, {
         method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
-          _subject: `New order ${id} — ${fd.name} — ${money(t.total)} (check Venmo)`, _template: "box",
-          _autoresponse: `Thanks ${fd.name}! Your ChainLab order ${id} is under review. Total: ${money(t.total)}. If you haven't paid yet, send it on Venmo to @${CFG.venmoUsername} with the note ${id}: ${link} — we'll email you once payment is confirmed and your order ships.`,
-          order_id: id, status: "UNDER REVIEW — confirm Venmo payment with note " + id,
+          _subject: `New order ${id} — ${fd.name} — ${money(t.total)} (awaiting BTC)`, _template: "box",
+          _autoresponse: `Thanks ${fd.name}! Your ChainLab order ${id} is awaiting payment. Total: ${money(t.total)}${btc ? ` (≈ ${btc} BTC)` : ""}. Send Bitcoin to: ${CFG.btcAddress} — from Cash App: Money tab → Bitcoin → Send → Send to address, enter $${t.total.toFixed(2)}. We'll email you once payment is confirmed and your order ships.`,
+          order_id: id, status: "AWAITING BITCOIN PAYMENT",
           name: fd.name, email: fd.email, shipping_address: fd.address,
-          order: orderText(), subtotal: money(t.sub), shipping: money(t.ship), total: money(t.total)
+          order: orderText(), subtotal: money(t.sub), shipping: money(t.ship), total: money(t.total),
+          total_btc: btc || "—", btc_price_used: px ? money(px) : "—"
         })
       });
       if (!r.ok) throw 0;
-      const o = { id, total: t.total, email: fd.email };
+      const o = { id, total: t.total, btc, email: fd.email };
       store.set("cl_pending", o);
       cart = []; store.set("cl_cart", cart); $("#cartCount").textContent = 0;
       f.reset(); f.classList.remove("show"); $("#toCheckout").style.display = "";
