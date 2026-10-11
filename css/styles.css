@@ -397,3 +397,9 @@ footer ul a:hover{color:var(--text)}
 .input:-webkit-autofill,.input:-webkit-autofill:hover,.input:-webkit-autofill:focus{-webkit-text-fill-color:var(--text);-webkit-box-shadow:0 0 0 1000px var(--panel) inset;caret-color:var(--text);transition:background-color 9999s}
 /* 16px inputs stop iOS from zooming in when a field is tapped */
 @media (max-width:720px){.checkout-form .input,.checkout-form select.input{font-size:16px}}
+
+.wallet-btn{width:100%;font-size:1rem;padding:16px 20px}
+.wallet-note{font-size:.8rem;text-align:center;margin-top:-4px}
+.qr-toggle{width:100%;text-align:center;font-size:.85rem;color:var(--muted)}
+.qr-toggle summary{cursor:pointer;margin-bottom:10px}
+.qr-toggle .qr{display:inline-block}
