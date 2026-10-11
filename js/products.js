@@ -795,5 +795,12 @@ window.CL_PRODUCTS = [
     "kit": 57
    }
   ]
+ },
+ {
+  "id": "test-order",
+  "name": "TEST ORDER (do not ship)",
+  "cat": "Supplies",
+  "hidden": true,
+  "sizes": [{"size": "test", "single": 1, "kit": 1}]
  }
 ];
