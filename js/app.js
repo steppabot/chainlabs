@@ -263,6 +263,12 @@
     el.addEventListener("pointerleave", () => el.style.transform = "");
   });
 
+  // live catalog counts (so updating products.js updates the homepage)
+  const nProd = P.length, nSizes = P.reduce((a, p) => a + p.sizes.length, 0);
+  $$('[data-n="products"]').forEach(el => el.textContent = nProd);
+  $$('[data-n="products-count"]').forEach(el => el.dataset.count = nProd);
+  $$('[data-n="sizes-count"]').forEach(el => el.dataset.count = nSizes);
+
   // count-up numbers
   const cio = new IntersectionObserver(es => es.forEach(e => {
     if (!e.isIntersecting) return; cio.unobserve(e.target);
