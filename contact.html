@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact — ChainLab Peptides</title>
+<meta name="description" content="Contact ChainLab Peptides support for orders, bulk pricing and availability.">
+<meta name="theme-color" content="#06070a">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="contact">
+<main>
+  <section class="page-head"><div class="wrap">
+    <span class="mono eyebrow">Support</span>
+    <h1>Let's talk<br><span class="grad-text">research.</span></h1>
+    <p>Order questions, bulk quotes or availability — send a message and it goes straight to our support inbox.</p>
+  </div></section>
+
+  <div class="wrap contact-grid">
+    <div style="display:grid;gap:16px;align-content:start">
+      <div class="contact-card reveal">
+        <div class="item"><div class="ico"><svg width="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18v12H3z"/><path d="M3 7l9 6 9-6"/></svg></div><div><small>Email</small><a id="mailLink" href="#"></a></div></div>
+        <div class="item"><div class="ico"><svg width="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><small>Response time</small>Within 1 business day</div></div>
+        <div class="item"><div class="ico"><svg width="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/></svg></div><div><small>Ships from</small>US domestic inventory</div></div>
+      </div>
+      <div class="contact-card faq reveal" id="faq">
+        <h3 style="font-family:var(--fd);font-size:1.4rem">FAQ</h3>
+        <div>
+          <details><summary>What's the difference between a vial and a kit?</summary><p>A single vial is one sealed vial of the size you pick. A kit is ten vials of the same size and is priced much lower per vial.</p></details>
+          <details><summary>How fast do orders ship?</summary><p>Orders ship from US inventory, typically within one business day of payment confirmation. You'll receive tracking by email.</p></details>
+          <details><summary>Do you offer bulk pricing?</summary><p>Yes. Choose "Bulk quote" in the form with the compounds and quantities you need.</p></details>
+          <details><summary>Are these for human use?</summary><p>No. All products are sold strictly for laboratory research use only and are not for human or animal consumption.</p></details>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card reveal">
+      <form id="contactForm" style="display:grid;gap:18px">
+        <div class="field"><label>What can we help with?</label>
+          <div class="topics" id="topics">
+            <button type="button" class="chip on" data-t="Order question">Order question</button>
+            <button type="button" class="chip" data-t="Bulk quote">Bulk quote</button>
+            <button type="button" class="chip" data-t="Product availability">Availability</button>
+            <button type="button" class="chip" data-t="Shipping">Shipping</button>
+            <button type="button" class="chip" data-t="Other">Other</button>
+          </div></div>
+        <div class="form-row">
+          <div class="field"><label for="n">Name</label><input class="input" id="n" name="name" required></div>
+          <div class="field"><label for="e">Email</label><input class="input" id="e" name="email" type="email" required></div>
+        </div>
+        <div class="field"><label for="o">Order number <span style="color:var(--dim)">(optional)</span></label><input class="input" id="o" name="order_number"></div>
+        <div class="field"><label for="m">Message</label><textarea class="input" id="m" name="message" required></textarea></div>
+        <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+        <button class="btn btn-primary" type="submit" id="sendBtn">Send message <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12l16-8-6 16-2-7z"/></svg></button>
+        <div class="form-status" id="status"></div>
+      </form>
+      <div class="success" id="success"><div class="ring"><svg width="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12l5 5L20 7"/></svg></div>
+        <h3 style="font-family:var(--fd);font-size:1.8rem;margin-bottom:8px">Message sent</h3><p class="muted">We'll reply to your email within one business day.</p><br>
+        <button class="btn btn-ghost" onclick="location.reload()">Send another</button></div>
+    </div>
+  </div>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/app.js"></script>
+<script>
+  const ml = document.getElementById("mailLink"); ml.textContent = CL_CONFIG.supportEmail; ml.href = "mailto:" + CL_CONFIG.supportEmail;
+  let topic = "Order question";
+  document.getElementById("topics").addEventListener("click", e => {
+    const c = e.target.closest(".chip"); if (!c) return; topic = c.dataset.t;
+    document.querySelectorAll("#topics .chip").forEach(x => x.classList.toggle("on", x === c));
+  });
+  document.getElementById("contactForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const f = e.target, data = Object.fromEntries(new FormData(f)), btn = document.getElementById("sendBtn"), st = document.getElementById("status");
+    if (data._honey) return;
+    btn.disabled = true; btn.firstChild.textContent = "Sending… "; st.textContent = ""; st.className = "form-status";
+    try {
+      const r = await fetch(CL_CONFIG.formEndpoint, {
+        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ _subject: `[ChainLab] ${topic} — ${data.name}`, _replyto: data.email, _template: "table", topic, name: data.name, email: data.email, order_number: data.order_number || "—", message: data.message })
+      });
+      if (!r.ok) throw 0;
+      f.style.display = "none"; document.getElementById("success").classList.add("show");
+    } catch {
+      st.className = "form-status err"; st.textContent = "Couldn't send right now. Please email " + CL_CONFIG.supportEmail + " directly.";
+      btn.disabled = false; btn.firstChild.textContent = "Send message ";
+    }
+  });
+</script>
+</body>
+</html>

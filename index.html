@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChainLab Peptides — US-Stocked Research Peptides</title>
+<meta name="description" content="ChainLab Peptides: research-grade peptides stocked in the USA. Single vials or 10-vial kits, fast domestic shipping. For research use only.">
+<meta property="og:title" content="ChainLab Peptides">
+<meta property="og:description" content="US-stocked research peptides. Single vials or 10-vial kits.">
+<meta name="theme-color" content="#06070a">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="home">
+<main>
+  <section class="hero">
+    <canvas id="chain-canvas"></canvas>
+    <div class="residue-tag" id="resTag"></div>
+    <div class="wrap">
+      <div class="hero-copy">
+        <span class="pill"><b>NEW</b> US-stocked · ships in 24h</span>
+        <h1><span class="line"><span>Peptides,</span></span><span class="line"><span class="grad-text">sequenced</span></span><span class="line"><span>for research.</span></span></h1>
+        <p class="lead">45 research peptides held in US inventory. Order a single vial to start, or save with full 10-vial kits.</p>
+        <div class="ctas">
+          <a href="products.html" class="btn btn-primary">Shop all peptides <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a href="#how" class="btn btn-ghost">How it works</a>
+        </div>
+      </div>
+    </div>
+    <div class="seq-strip"><span id="seq"></span></div>
+    <div class="hero-hint mono"><i></i>Drag the chain · hover a residue</div>
+  </section>
+
+  <div class="stats"><div class="wrap">
+    <div class="stat"><strong data-count="45">0</strong><span>Research compounds</span></div>
+    <div class="stat"><strong data-count="81">0</strong><span>Sizes in stock</span></div>
+    <div class="stat"><strong data-count="24" data-suffix="h">0</strong><span>Typical dispatch</span></div>
+    <div class="stat"><strong data-count="2">0</strong><span>Formats: vial or kit</span></div>
+  </div></div>
+
+  <section class="block"><div class="wrap">
+    <div class="sec-head reveal">
+      <div><span class="mono eyebrow">01 — Catalog</span><h2>Browse by research area.</h2></div>
+      <p>Every compound is grouped by the pathway it's studied in, so you can find what you need fast.</p>
+    </div>
+    <div class="cats" id="cats"></div>
+  </div></section>
+
+  <div class="marquee"><div class="marquee-track" id="marq"></div></div>
+
+  <section class="block"><div class="wrap">
+    <div class="sec-head reveal">
+      <div><span class="mono eyebrow">02 — Formats</span><h2>Start with one vial.<br>Scale with a kit.</h2></div>
+      <p>Every product comes in two formats. Test a compound with a single vial, then move to kits for ongoing work.</p>
+    </div>
+    <div class="split">
+      <div class="offer reveal">
+        <span class="mono muted">Single vial</span>
+        <h3>Try before you stock up</h3>
+        <div class="vial-row one"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <ul><li>One sealed vial of any size</li><li>Ideal for a first order or new protocol</li><li>Same domestic dispatch</li></ul>
+        <a href="products.html?mode=single" class="btn btn-ghost">Shop single vials</a>
+      </div>
+      <div class="offer feature reveal">
+        <span class="mono" style="color:var(--mint)">10-vial kit · Best value</span>
+        <h3>Kits for serious research</h3>
+        <div class="vial-row"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <ul><li>Ten vials, same batch</li><li>Far lower cost per vial</li><li>Built for repeat and long-running studies</li></ul>
+        <a href="products.html?mode=kit" class="btn btn-primary">Shop kits</a>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="block" id="how" style="padding-top:0"><div class="wrap">
+    <div class="sec-head reveal">
+      <div><span class="mono eyebrow">03 — Process</span><h2>From cart to lab bench.</h2></div>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><span class="num">01</span><div class="ico"><svg width="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></div><h4>Pick compounds</h4><p>Filter by research area, choose a size and format.</p></div>
+      <div class="step reveal"><span class="num">02</span><div class="ico"><svg width="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16v12H4z"/><path d="M4 10h16"/></svg></div><h4>Place your order</h4><p>Check out in seconds. We confirm by email.</p></div>
+      <div class="step reveal"><span class="num">03</span><div class="ico"><svg width="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div><h4>Domestic dispatch</h4><p>Packed from US stock, typically within one business day.</p></div>
+      <div class="step reveal"><span class="num">04</span><div class="ico"><svg width="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3h6M10 3v6L5 19a1 1 0 001 2h12a1 1 0 001-2l-5-10V3"/></svg></div><h4>Research</h4><p>Vials arrive sealed and labeled with size and lot.</p></div>
+    </div>
+  </div></section>
+
+  <section class="block" style="padding-top:0"><div class="wrap">
+    <div class="sec-head reveal">
+      <div><span class="mono eyebrow">04 — Popular</span><h2>Most requested.</h2></div>
+      <a href="products.html" class="btn btn-ghost">View all 45 →</a>
+    </div>
+    <div class="grid" id="featured" style="padding-bottom:0"></div>
+  </div></section>
+
+  <section class="block"><div class="wrap">
+    <div class="cta-band reveal">
+      <span class="mono eyebrow">Questions?</span>
+      <h2 style="margin-top:14px">Talk to a real person.</h2>
+      <p>Bulk pricing, availability, or order help. Send a message and we'll reply by email.</p>
+      <a href="contact.html" class="btn btn-primary">Contact support</a>
+    </div>
+  </div></section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/app.js"></script>
+<script src="js/chain3d.js"></script>
+<script src="js/shop.js"></script>
+<script>
+  initChain(document.getElementById("chain-canvas"), { tag: document.getElementById("resTag"), fadeOnScroll: true });
+  // sequence strip
+  const s = "G E P P P G K P A D D A G L V ".repeat(3);
+  document.getElementById("seq").innerHTML = (s.split(" ").map((c,i)=> i%7===0?`<em>${c}</em>`:c).join(" · ") + " · ").repeat(4);
+  // categories
+  const counts = {}; CL_PRODUCTS.forEach(p => counts[p.cat] = (counts[p.cat]||0)+1);
+  document.getElementById("cats").innerHTML = Object.entries(CL_CATS).filter(([k])=>k!=="Supplies").map(([k,v],i)=>`
+    <a class="cat-tile reveal" style="--c:${v.c}" href="products.html?cat=${encodeURIComponent(k)}">
+      <span class="mono idx">0${i+1}</span>
+      <span class="arrow"><svg width="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <h3>${k}</h3><p>${v.blurb}</p><span class="count">${counts[k]} compounds</span></a>`).join("");
+  bindTilt(".cat-tile");
+  // marquee
+  const names = CL_PRODUCTS.filter(p=>p.cat!=="Supplies").map(p=>`<a href="products.html?q=${encodeURIComponent(p.name)}">${p.name}</a>`).join("");
+  document.getElementById("marq").innerHTML = names + names;
+  // featured
+  renderCards(document.getElementById("featured"), ["retatrutide","tirzepatide","bpc-157","bpc157-tb-500","ghk-cu","nad","tesamorelin","mots-c"].map(id=>CL_PRODUCTS.find(p=>p.id===id)).filter(Boolean), "kit");
+  observeReveal();
+</script>
+</body>
+</html>

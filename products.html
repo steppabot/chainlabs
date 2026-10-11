@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Products — ChainLab Peptides</title>
+<meta name="description" content="Shop 45 US-stocked research peptides as single vials or 10-vial kits. For research use only.">
+<meta name="theme-color" content="#06070a">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="products">
+<main>
+  <section class="page-head"><div class="wrap" style="position:relative">
+    <span class="mono eyebrow">Catalog · <span id="resultCount">45 compounds</span></span>
+    <h1>All peptides.</h1>
+    <p>Every product ships from US inventory. Switch between single vials and 10-vial kits; prices update instantly. Press <span class="mono" style="border:1px solid var(--line2);padding:2px 6px;border-radius:6px">/</span> to search.</p>
+    <canvas class="mini-chain" id="miniChain"></canvas>
+  </div></section>
+
+  <div class="toolbar"><div class="wrap">
+    <div class="mode-switch" id="modeSwitch"><span class="knob"></span><button data-m="kit">10-Vial Kit</button><button data-m="single">Single Vial</button></div>
+    <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="search" placeholder="Search peptides…" autocomplete="off"></label>
+    <select class="sort" id="sort" aria-label="Sort"><option value="featured">Sort: Featured</option><option value="low">Price: low → high</option><option value="high">Price: high → low</option><option value="az">Name: A → Z</option></select>
+  </div><div class="wrap" style="margin-top:12px"><div class="chips" id="chips"></div></div></div>
+
+  <div class="wrap"><div class="grid" id="productGrid"></div></div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/products.js"></script>
+<script src="js/app.js"></script>
+<script src="js/chain3d.js"></script>
+<script src="js/shop.js"></script>
+<script>initChain(document.getElementById("miniChain"), { residues: 22, interactive: false, offsetX: 0, zoom: 17, particles: false });</script>
+</body>
+</html>
