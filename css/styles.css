@@ -346,3 +346,34 @@ footer ul a:hover{color:var(--text)}
 .howto summary{cursor:pointer;color:var(--text);font-weight:600}
 .howto ol{margin:10px 0 6px 18px;display:grid;gap:4px}
 .howto b{color:var(--text)}
+
+.pending-card{display:grid;gap:4px;justify-items:start;width:100%;margin:14px 0 4px;padding:14px 16px;border-radius:14px;border:1px solid rgba(255,196,107,.3);background:rgba(255,196,107,.05);text-align:left;cursor:pointer;color:var(--text)}
+.pending-card:hover{border-color:var(--amber)}
+.pending-card b{font-family:var(--fd);font-size:1.05rem;margin-top:6px}
+.pending-card small{color:var(--muted);font-size:.8rem}
+.cart-empty svg{height:110px;width:auto}
+
+/* order status cards */
+.order-list{display:grid;gap:8px;margin:14px 0 6px}
+.order-list-h{color:var(--muted);font-size:.7rem}
+.pending-card{position:relative;margin:0}
+.dismiss{position:absolute;top:10px;right:12px;color:var(--dim);font-size:1.2rem;line-height:1;cursor:pointer}
+.dismiss:hover{color:var(--text)}
+.status-pill.st-mint,.st-mint .status-pill{color:var(--mint);border-color:rgba(109,255,179,.35);background:rgba(109,255,179,.08)}
+.st-mint .status-pill i,.status-pill.st-mint i{background:var(--mint);animation:none}
+.status-pill.st-rose,.st-rose .status-pill{color:var(--rose);border-color:rgba(255,122,156,.35);background:rgba(255,122,156,.08)}
+.st-rose .status-pill i,.status-pill.st-rose i{background:var(--rose);animation:none}
+.pending-card.st-mint{border-color:rgba(109,255,179,.3);background:rgba(109,255,179,.05)}
+.pending-card.st-rose{border-color:rgba(255,122,156,.3);background:rgba(255,122,156,.04)}
+
+/* checkout fields */
+.ck-h{font-size:.66rem;color:var(--muted);margin-top:4px}
+.ck-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.checkout-form .input{padding:12px 14px}
+.checkout-form select.input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b93a4' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:16px;padding-right:36px}
+.input.bad{border-color:var(--rose);box-shadow:0 0 0 4px rgba(255,122,156,.1)}
+.ck-err{color:var(--rose);font-size:.82rem;min-height:0}
+.ck-err:empty{display:none}
+.shipto{width:100%;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:12px;font-size:.85rem;line-height:1.5}
+.shipto small{display:block;color:var(--muted);font-size:.7rem;margin-bottom:2px}
+.track-link{color:var(--cyan);font-size:.88rem}.track-link:hover{text-decoration:underline}
