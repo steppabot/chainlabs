@@ -198,7 +198,7 @@
     const body = $("#cartBody");
     if (!cart.length) {
       body.innerHTML = orderCards() + `<div class="cart-empty"><div style="display:flex;justify-content:center;opacity:.5;margin-bottom:16px">${vialSVG("#3a4150", "EMPTY", "—", "")}</div>Your cart is empty.<br><br><a class="btn btn-ghost" href="products.html">Browse products</a></div>`;
-      $("#cartFoot").style.display = "none"; return;
+      $("#cartFoot").style.display = "none"; $("#drawer").classList.remove("checking"); return;
     }
     $("#cartFoot").style.display = "";
     body.innerHTML = cart.map((it, i) => {
@@ -244,7 +244,8 @@
   let poll;
   $("#toCheckout").onclick = () => {
     $("#checkoutForm").classList.add("show"); $("#toCheckout").style.display = "none";
-    $("#cartBody").scrollTop = 1e6;
+    $("#drawer").classList.add("checking");
+    requestAnimationFrame(() => $("#checkoutForm").scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   function showPayment(o) {
@@ -314,7 +315,7 @@
       const o = { id, token, total: t.total, btc, email: fd.email, shipTo: fd.address, at: Date.now(), status: "awaiting" };
       orders.push(o); saveOrders();
       cart = []; store.set("cl_cart", cart); $("#cartCount").textContent = 0;
-      f.reset(); f.classList.remove("show"); $("#toCheckout").style.display = "";
+      f.reset(); f.classList.remove("show"); $("#toCheckout").style.display = ""; $("#drawer").classList.remove("checking"); $("#drawer").scrollTop = 0;
       showPayment(o);
     } catch (err) {
       $("#ckErr").textContent = err && err.message === "not configured" ? "Checkout isn't available right now — please email " + CFG.supportEmail : "We couldn't place your order. Double-check your shipping details and try again.";
@@ -386,10 +387,10 @@
     });
     const msg = !bad ? "" : bad.name === "zip" ? "Enter a valid 5-digit ZIP code." : bad.name === "email" ? "Enter a valid email address." : bad.name === "ack" ? "Please confirm the research-use statement." : bad.name === "address1" ? "Enter your full street address (number and street name)." : bad.name === "city" ? "Enter your city." : "Please fill in all shipping details.";
     $("#ckErr").textContent = msg;
-    if (bad) bad.focus();
+    if (bad) { bad.focus({ preventScroll: true }); bad.scrollIntoView({ behavior: "smooth", block: "center" }); }
     return !bad;
   }
-  $("#checkoutForm").addEventListener("input", e => e.target.classList.remove("bad"));
+  $("#checkoutForm").addEventListener("input", e => { e.target.classList.remove("bad"); if (!$("#checkoutForm .bad")) $("#ckErr").textContent = ""; });
   $("#checkoutForm").addEventListener("submit", e => { e.preventDefault(); if (validCheckout()) sendOrder(); });
   render();
 
