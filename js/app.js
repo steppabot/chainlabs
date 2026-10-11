@@ -95,9 +95,8 @@
         <input class="input" name="email" type="email" placeholder="Email" required>
         <textarea class="input" name="address" placeholder="Shipping address" style="min-height:80px" required></textarea>
         <label class="ack"><input type="checkbox" required> I confirm I am 21+ and purchasing for laboratory research use only, not for human consumption.</label>
-        <div id="paypal-buttons"></div>
-        <button class="btn btn-primary" type="submit" id="orderSubmit">Submit order request</button>
-        <p class="ship-note">We'll email your invoice and payment instructions to confirm the order.</p>
+        <button class="btn btn-primary" type="submit" id="orderSubmit">Place order</button>
+        <p class="ship-note">Next you'll get a Venmo request for your total. Orders ship once payment is confirmed.</p>
       </form>
       <button class="btn btn-primary" id="toCheckout">Checkout</button>
     </div>
@@ -183,48 +182,66 @@
   const open = () => { $("#drawer").classList.add("open"); $("#scrim").classList.add("open"); };
   const close = () => { $("#drawer").classList.remove("open"); $("#scrim").classList.remove("open"); };
   window.openCart = open;
-  $("#cartOpen").onclick = open; $("#cartClose").onclick = close; $("#scrim").onclick = close;
+  $("#cartOpen").onclick = () => (!cart.length && store.get("cl_pending", null)) ? showPendingOrder() : open(); $("#cartClose").onclick = close; $("#scrim").onclick = close;
   document.addEventListener("keydown", e => e.key === "Escape" && close());
 
-  /* ---------- checkout ---------- */
+  /* ---------- checkout (Venmo, manually confirmed) ---------- */
   const orderText = () => cart.map(i => `${i.qty} × ${byId[i.id].name} ${i.size} (${i.mode === "kit" ? "10-vial kit" : "single vial"}) — ${money(priceOf(i) * i.qty)}`).join("\n");
-  let paypalLoaded = false;
+  const newOrderId = () => "CL-" + Date.now().toString(36).slice(-4).toUpperCase() + Math.floor(Math.random() * 90 + 10);
+  const venmoLink = (amt, note) => `https://venmo.com/${encodeURIComponent(CFG.venmoUsername)}?txn=pay&amount=${amt.toFixed(2)}&note=${encodeURIComponent(note)}`;
   $("#toCheckout").onclick = () => {
     $("#checkoutForm").classList.add("show"); $("#toCheckout").style.display = "none";
     $("#cartBody").scrollTop = 1e6;
-    if (CFG.paypalClientId && !paypalLoaded) loadPayPal();
   };
-  function loadPayPal() {
-    paypalLoaded = true;
-    const s = document.createElement("script");
-    s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(CFG.paypalClientId)}&currency=USD&disable-funding=paylater`;
-    s.onload = () => paypal.Buttons({
-      style: { shape: "pill", color: "black", label: "pay" },
-      onClick: (d, actions) => $("#checkoutForm").reportValidity() ? actions.resolve() : actions.reject(),
-      createOrder: (d, actions) => {
-        const t = totals();
-        return actions.order.create({ purchase_units: [{ description: "ChainLab Peptides order", amount: { currency_code: "USD", value: t.total.toFixed(2) } }] });
-      },
-      onApprove: (d, actions) => actions.order.capture().then(det => sendOrder("PAID via PayPal · " + det.id))
-    }).render("#paypal-buttons");
-    document.head.appendChild(s);
+
+  function showPayment(o) {
+    const link = venmoLink(o.total, o.id);
+    $("#cartFoot").style.display = "none";
+    $("#cartBody").innerHTML = `<div class="pay-panel">
+      <span class="status-pill"><i></i>Order under review</span>
+      <h3>Order ${o.id}</h3>
+      <p class="muted">Send <b style="color:var(--text)">${money(o.total)}</b> on Venmo to <b style="color:var(--text)">@${CFG.venmoUsername}</b>. Keep the note as <b style="color:var(--text)">${o.id}</b> so we can match your payment.</p>
+      <div class="qr" id="venmoQR"></div>
+      <a class="btn btn-primary venmo-btn" href="${link}" target="_blank" rel="noopener">Open Venmo · ${money(o.total)}</a>
+      <div class="pay-steps">
+        <div><b>1</b>Scan the code or tap the button</div>
+        <div><b>2</b>Confirm ${money(o.total)} with note ${o.id}</div>
+        <div><b>3</b>We verify the payment and email ${o.email} when it ships</div>
+      </div>
+      <button class="btn btn-ghost" id="payDone" style="width:100%">Done</button>
+    </div>`;
+    const drawQR = () => new QRCode($("#venmoQR"), { text: link, width: 196, height: 196, colorDark: "#06070a", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+    if (window.QRCode) drawQR();
+    else { const q = document.createElement("script"); q.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"; q.onload = drawQR; document.head.appendChild(q); }
+    $("#payDone").onclick = () => { store.set("cl_pending", null); close(); render(); };
   }
-  async function sendOrder(status) {
-    const f = $("#checkoutForm"), fd = Object.fromEntries(new FormData(f)), t = totals();
-    const btn = $("#orderSubmit"); btn.disabled = true; btn.textContent = "Sending…";
+  window.showPendingOrder = () => { const o = store.get("cl_pending", null); if (o) { showPayment(o); open(); } };
+
+  async function sendOrder() {
+    const f = $("#checkoutForm"), fd = Object.fromEntries(new FormData(f)), t = totals(), id = newOrderId();
+    const btn = $("#orderSubmit"); btn.disabled = true; btn.textContent = "Placing order…";
+    const link = venmoLink(t.total, id);
     try {
       const r = await fetch(CFG.formEndpoint, {
         method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ _subject: `New order request — ${fd.name} — ${money(t.total)}`, _template: "box", name: fd.name, email: fd.email, shipping_address: fd.address, status, order: orderText(), subtotal: money(t.sub), shipping: money(t.ship), total: money(t.total) })
+        body: JSON.stringify({
+          _subject: `New order ${id} — ${fd.name} — ${money(t.total)} (check Venmo)`, _template: "box",
+          _autoresponse: `Thanks ${fd.name}! Your ChainLab order ${id} is under review. Total: ${money(t.total)}. If you haven't paid yet, send it on Venmo to @${CFG.venmoUsername} with the note ${id}: ${link} — we'll email you once payment is confirmed and your order ships.`,
+          order_id: id, status: "UNDER REVIEW — confirm Venmo payment with note " + id,
+          name: fd.name, email: fd.email, shipping_address: fd.address,
+          order: orderText(), subtotal: money(t.sub), shipping: money(t.ship), total: money(t.total)
+        })
       });
       if (!r.ok) throw 0;
-      cart = []; save(); f.reset(); f.classList.remove("show"); $("#toCheckout").style.display = "";
-      $("#cartBody").innerHTML = `<div class="cart-empty"><div class="success show"><div class="ring">✓</div><h3 style="font-family:var(--fd);color:var(--text);margin-bottom:8px">Order received</h3>We'll email ${fd.email} with your invoice shortly.</div></div>`;
-      $("#cartFoot").style.display = "none";
-    } catch { toast("Couldn't send — please email " + CFG.supportEmail); }
-    btn.disabled = false; btn.textContent = "Submit order request";
+      const o = { id, total: t.total, email: fd.email };
+      store.set("cl_pending", o);
+      cart = []; store.set("cl_cart", cart); $("#cartCount").textContent = 0;
+      f.reset(); f.classList.remove("show"); $("#toCheckout").style.display = "";
+      showPayment(o);
+    } catch { toast("Couldn't place order — please email " + CFG.supportEmail); }
+    btn.disabled = false; btn.textContent = "Place order";
   }
-  $("#checkoutForm").addEventListener("submit", e => { e.preventDefault(); sendOrder("Awaiting payment (invoice customer)"); });
+  $("#checkoutForm").addEventListener("submit", e => { e.preventDefault(); sendOrder(); });
   render();
 
   /* ---------- effects ---------- */
