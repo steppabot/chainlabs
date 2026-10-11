@@ -236,6 +236,7 @@
   const orderText = () => cart.map(i => `${i.qty} × ${byId[i.id].name} ${i.size} (${i.mode === "kit" ? "10-vial kit" : "single vial"}) — ${money(priceOf(i) * i.qty)}`).join("\n");
   const newOrderId = () => "CL-" + Date.now().toString(36).slice(-4).toUpperCase() + Math.floor(Math.random() * 90 + 10);
   const newToken = () => (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
   const btcUri = o => `bitcoin:${CFG.btcAddress}` + (o.btc ? `?amount=${o.btc}&label=${encodeURIComponent("ChainLab " + o.id)}` : "");
   async function btcPrice() {
     try { const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"); const j = await r.json(); return j.bitcoin.usd || 0; }
@@ -269,7 +270,11 @@
         <h3>Order ${o.id}</h3>
         <p class="muted">Send <b style="color:var(--text)">${money(o.total)}</b>${o.btc ? ` (≈ ${o.btc} BTC)` : ""} in Bitcoin to the address below.</p>
         ${o.shipTo ? `<div class="shipto"><small>Ships to</small>${o.shipTo.replace(/\n/g, "<br>")}</div>` : ""}
-        <div class="qr" id="payQR"></div>
+        ${isMobile
+          ? `<a class="btn btn-primary wallet-btn" id="openWallet" href="${btcUri(o)}">Open in Cash App / Bitcoin wallet</a>
+             <p class="muted wallet-note" id="walletNote">Opens your Bitcoin app with our address filled in. Tapping it also copies our address — if nothing opens, paste it in Cash App.</p>
+             <details class="qr-toggle"><summary>Show QR code instead</summary><div class="qr" id="payQR"></div></details>`
+          : `<div class="qr" id="payQR"></div>`}
         <div class="copy-list">${copyBtn(CFG.btcAddress, "Bitcoin address")}${o.btc ? copyBtn(o.btc, "Amount (BTC)") : ""}${copyBtn(o.total.toFixed(2), "Amount (USD)")}</div>
         <details class="howto" open><summary>Paying with Cash App?</summary>
           <ol><li><b>Buy the Bitcoin first:</b> tap the <b>Money</b> tab → <b>Bitcoin</b> → <b>Buy</b> → buy <b>$${Math.ceil(o.total + 5)}</b> (covers the order plus Cash App's small network fee)</li>
@@ -281,6 +286,8 @@
           : `<input class="input" id="txid" placeholder="Transaction ID (optional)" style="font-size:.85rem"><button class="btn btn-primary" id="paidBtn" style="width:100%">I've sent it</button>`}
         <p class="muted" style="font-size:.8rem">We emailed your order number and these payment details to <b style="color:var(--text)">${o.email}</b>. Check status anytime on the <a class="track-link" href="track.html?order=${o.id}">Track order</a> page.</p>
         ${back}</div>`;
+      const ow = $("#openWallet");
+      if (ow) ow.addEventListener("click", () => { try { navigator.clipboard.writeText(CFG.btcAddress); } catch {} $("#walletNote").innerHTML = "Address copied ✓ — if your app didn't open, open Cash App → Money → Bitcoin → Send → Send to address and paste it."; });
       const drawQR = () => new QRCode($("#payQR"), { text: btcUri(o), width: 196, height: 196, colorDark: "#06070a", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
       if (window.QRCode) drawQR();
       else { const q = document.createElement("script"); q.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"; q.onload = drawQR; document.head.appendChild(q); }
