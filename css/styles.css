@@ -334,3 +334,15 @@ footer ul a:hover{color:var(--text)}
 .pay-steps{display:grid;gap:8px;width:100%;text-align:left;font-size:.85rem;color:var(--muted)}
 .pay-steps div{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
 .pay-steps b{width:22px;height:22px;flex:none;border-radius:50%;background:rgba(109,255,179,.12);color:var(--mint);display:grid;place-items:center;font-size:.72rem}
+
+/* bitcoin payment */
+.copy-list{display:grid;gap:8px;width:100%}
+.copy-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);cursor:pointer;text-align:left;font-family:var(--fm);font-size:.78rem;color:var(--text);transition:border-color .2s}
+.copy-row:hover{border-color:var(--mint)}
+.copy-row span{min-width:0;word-break:break-all}
+.copy-row small{display:block;font-family:var(--fb);font-size:.7rem;color:var(--muted);margin-bottom:2px}
+.copy-row i{font-style:normal;color:var(--mint);font-family:var(--fb);font-size:.78rem;flex:none}
+.howto{width:100%;text-align:left;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:.85rem;color:var(--muted)}
+.howto summary{cursor:pointer;color:var(--text);font-weight:600}
+.howto ol{margin:10px 0 6px 18px;display:grid;gap:4px}
+.howto b{color:var(--text)}
