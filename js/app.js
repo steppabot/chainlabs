@@ -279,7 +279,7 @@
           <p>You need Bitcoin in your balance before you can send it. Any other Bitcoin wallet (Coinbase, Strike, Exodus) works too.</p></details>
         ${o.status === "verifying" ? `<p class="muted" style="font-size:.85rem">Thanks! We're confirming your payment. This page updates automatically.</p>`
           : `<input class="input" id="txid" placeholder="Transaction ID (optional)" style="font-size:.85rem"><button class="btn btn-primary" id="paidBtn" style="width:100%">I've sent it</button>`}
-        <p class="muted" style="font-size:.8rem">Save your order number <b style="color:var(--text)">${o.id}</b> — use it with your email on the <a class="track-link" href="track.html?order=${o.id}">Track order</a> page.</p>
+        <p class="muted" style="font-size:.8rem">We emailed your order number and these payment details to <b style="color:var(--text)">${o.email}</b>. Check status anytime on the <a class="track-link" href="track.html?order=${o.id}">Track order</a> page.</p>
         ${back}</div>`;
       const drawQR = () => new QRCode($("#payQR"), { text: btcUri(o), width: 196, height: 196, colorDark: "#06070a", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
       if (window.QRCode) drawQR();
