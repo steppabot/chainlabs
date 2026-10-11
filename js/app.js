@@ -156,7 +156,8 @@
   const totals = () => {
     const sub = cart.reduce((a, i) => a + priceOf(i) * i.qty, 0);
     const free = CFG.freeShippingOver > 0 && sub >= CFG.freeShippingOver;
-    const ship = sub === 0 || free ? 0 : CFG.shippingFlat;
+    const testOnly = cart.length && cart.every(i => byId[i.id] && byId[i.id].hidden);
+    const ship = sub === 0 || free || testOnly ? 0 : CFG.shippingFlat;
     return { sub, ship, total: sub + ship };
   };
 
@@ -417,7 +418,7 @@
   });
 
   // live catalog counts (so updating products.js updates the homepage)
-  const nProd = P.length, nSizes = P.reduce((a, p) => a + p.sizes.length, 0);
+  const PV = P.filter(p => !p.hidden), nProd = PV.length, nSizes = PV.reduce((a, p) => a + p.sizes.length, 0);
   $$('[data-n="products"]').forEach(el => el.textContent = nProd);
   $$('[data-n="products-count"]').forEach(el => el.dataset.count = nProd);
   $$('[data-n="sizes-count"]').forEach(el => el.dataset.count = nSizes);
